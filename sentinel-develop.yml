@@ -8,8 +8,16 @@ logging:
 
   level: INFO
 
-mongoConfig:
+mySQLConfig:
 
-  host: localhost
-  port: 27017
-  dbName: postaldb
+  # The name of your JDBC driver
+  driverClass: com.mysql.jdbc.Driver
+  
+  # The JDBC URL
+  url: jdbc:mysql://localhost/sentineldb
+ 
+  # The username
+  username: sentinel
+    
+  # The password
+  password: sentinel12345
