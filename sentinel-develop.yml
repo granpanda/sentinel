@@ -1,0 +1,15 @@
+http:
+
+  port: 9018
+  adminPort: 9019
+  rootPath: /api/sentinel/*
+
+logging:
+
+  level: INFO
+
+mongoConfig:
+
+  host: localhost
+  port: 27017
+  dbName: postaldb
