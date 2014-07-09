@@ -40,20 +40,21 @@ public class CheckAllSystemsJob implements Job {
 
 		try {
 
-			if (rabbitConnection == null || !rabbitConnection.isOpen()) {
+			if (connection == null || !connection.isOpen()) {
 
-				RabbitHandler.closeChannel(rabbitChannel);
-				rabbitConnection = RabbitHandler.getRabbitConnection(QUEUE_HOST);
+				RabbitHandler.closeChannel(channel);
+				connection = RabbitHandler.getRabbitConnection(QUEUE_HOST);
 			}
 
-			if (rabbitChannel == null || !rabbitChannel.isOpen()) {
+			if (channel == null || !channel.isOpen()) {
 
-				rabbitChannel = RabbitHandler.getRabbitChannelAndInitializeQueue(rabbitConnection, QUEUE_NAME);
+				channel = RabbitHandler.getRabbitChannelAndInitializeQueue(connection, QUEUE_NAME);
 			}
 
 		} catch (IOException e) {
 
 			e.printStackTrace();
+			RabbitHandler.closeRabbitConnection(connection, channel);
 		}
 	}
 
