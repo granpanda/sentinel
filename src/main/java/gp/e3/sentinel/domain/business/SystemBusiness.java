@@ -1,15 +1,25 @@
 package gp.e3.sentinel.domain.business;
 
+import gp.e3.sentinel.domain.entities.System;
+import gp.e3.sentinel.domain.jobs.CheckAllSystemsJob;
+import gp.e3.sentinel.domain.repositories.SystemRepository;
+import gp.e3.sentinel.infrastructure.mq.RabbitHandler;
+import gp.e3.sentinel.infrastructure.utils.DateTimeTypeConverter;
+import gp.e3.sentinel.infrastructure.utils.SqlUtils;
+
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import gp.e3.sentinel.domain.entities.System;
-import gp.e3.sentinel.domain.repositories.SystemRepository;
-import gp.e3.sentinel.infrastructure.utils.SqlUtils;
-
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.joda.time.DateTime;
+import org.quartz.JobDataMap;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.rabbitmq.client.Channel;
 
 public class SystemBusiness {
 	
@@ -64,5 +74,34 @@ public class SystemBusiness {
 		}
 		
 		return systems;
+	}
+	
+	private Gson getDefaultGson() {
+
+		GsonBuilder gsonBuilder = new GsonBuilder();
+		gsonBuilder.registerTypeAdapter(DateTime.class, new DateTimeTypeConverter());
+
+		return gsonBuilder.create();
+	}
+	
+	public void initializeCheckAllSystemsJob() {
+		
+		String host = "localhost";
+		
+		try {
+			
+			Gson gson = getDefaultGson();
+			
+			com.rabbitmq.client.Connection rabbitConnection = RabbitHandler.getRabbitConnection(host);
+			Channel rabbitChannel = RabbitHandler.getRabbitChannelAndInitializeQueue(rabbitConnection, CheckAllSystemsJob.QUEUE_NAME);
+			
+			JobDataMap jobDataMap = new JobDataMap();
+			jobDataMap.put("gson", gson);
+			jobDataMap.put("rabbitChannel", rabbitChannel);
+			
+		} catch (IOException e) {
+			
+			e.printStackTrace();
+		}
 	}
 }
