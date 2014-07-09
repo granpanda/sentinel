@@ -31,13 +31,18 @@ public class SqlUtils {
 
 	public static void closeDbConnection(Connection dbConnection) {
 
-		if (dbConnection != null) {
+		try {
+			
+			if (dbConnection != null && !dbConnection.isClosed()) {
 
-			try {
 				dbConnection.close();
-			} catch (SQLException e) {
-				e.printStackTrace();
 			}
+			
+			dbConnection = null;
+			
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
 		}
 	}
 }

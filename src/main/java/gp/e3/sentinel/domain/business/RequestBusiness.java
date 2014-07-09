@@ -1,26 +1,26 @@
 package gp.e3.sentinel.domain.business;
 
+import gp.e3.sentinel.domain.entities.Request;
+import gp.e3.sentinel.domain.repositories.RequestRepository;
+import gp.e3.sentinel.infrastructure.utils.SqlUtils;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 
-import gp.e3.sentinel.domain.entities.Failure;
-import gp.e3.sentinel.domain.repositories.FailureRepository;
-import gp.e3.sentinel.infrastructure.utils.SqlUtils;
-
-public class FailureBusiness {
+public class RequestBusiness {
 	
 	private final BasicDataSource dataSource;
-	private final FailureRepository failureRepository;
+	private final RequestRepository requestRepository;
 
-	public FailureBusiness(BasicDataSource dataSource, FailureRepository failureRepository) {
+	public RequestBusiness(BasicDataSource dataSource, RequestRepository requestRepository) {
 		
 		this.dataSource = dataSource;
-		this.failureRepository = failureRepository;
+		this.requestRepository = requestRepository;
 	}
 
-	public boolean createFailure(Failure failure) {
+	public boolean createFailure(Request request) {
 		
 		boolean failureWasCreated = false;
 		Connection dbConnection = null;
@@ -28,7 +28,7 @@ public class FailureBusiness {
 		try {
 			
 			dbConnection = dataSource.getConnection();
-			failureWasCreated = failureRepository.createFailure(dbConnection, failure);
+			failureWasCreated = requestRepository.createRequest(dbConnection, request);
 			dbConnection.close();
 			
 		} catch (SQLException e) {
