@@ -26,7 +26,8 @@ public class SystemResource {
 	public Response createSystem(System system) {
 		
 		Response response = null;
-		boolean systemWasCreated = systemBusiness.createSystem(system);
+		long systemId = systemBusiness.createSystem(system);
+		boolean systemWasCreated = systemId != 0;
 		
 		if (systemWasCreated) {
 			

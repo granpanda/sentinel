@@ -15,9 +15,9 @@ public class SystemRepository {
 		this.systemDAO = systemDAO;
 	}
 	
-	public boolean createSystem(Connection dbConnection, System system) {
+	public long createSystem(Connection dbConnection, System system) {
 		
-		return (systemDAO.createSystem(dbConnection, system) == 1);
+		return systemDAO.createSystem(dbConnection, system);
 	}
 	
 	public List<System> getAllSystems(Connection dbConnection) {

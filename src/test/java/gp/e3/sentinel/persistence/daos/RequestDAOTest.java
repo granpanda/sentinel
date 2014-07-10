@@ -6,6 +6,7 @@ import gp.e3.sentinel.util.RequestFactoryForTests;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.joda.time.DateTimeZone;
@@ -65,7 +66,8 @@ public class RequestDAOTest {
 		String dropRequestsTableSQL = "DROP TABLE requests;";
 
 		try {
-			dbConnection.prepareStatement(dropRequestsTableSQL);
+			PreparedStatement prepareStatement = dbConnection.prepareStatement(dropRequestsTableSQL);
+			prepareStatement.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}

@@ -31,15 +31,15 @@ public class SystemBusiness {
 		this.systemRepository = systemRepository;
 	}
 	
-	public boolean createSystem(System system) {
+	public long createSystem(System system) {
 		
-		boolean systemWasCreated = false;
+		long systemId = 0;
 		Connection dbConnection = null;
 		
 		try {
 			
 			dbConnection = dataSource.getConnection();
-			systemWasCreated = systemRepository.createSystem(dbConnection, system);
+			systemId = systemRepository.createSystem(dbConnection, system);
 			
 		} catch (SQLException e) {
 			
@@ -50,7 +50,7 @@ public class SystemBusiness {
 			SqlUtils.closeDbConnection(dbConnection);
 		}
 		
-		return systemWasCreated;
+		return systemId;
 	}
 	
 	public List<System> getAllSystems() {

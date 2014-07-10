@@ -1,6 +1,7 @@
 package gp.e3.sentinel.persistence.daos;
 
 import gp.e3.sentinel.domain.entities.System;
+import gp.e3.sentinel.infrastructure.utils.SqlUtils;
 import gp.e3.sentinel.persistence.mappers.SystemMapper;
 
 import java.sql.Connection;
@@ -38,26 +39,27 @@ public class SystemDAO {
 		return result;
 	}
 	
-	public int createSystem(Connection dbConnection, System system) {
+	public long createSystem(Connection dbConnection, System system) {
 		
-		int affectedRows = 0;
+		long systemId = 0;
 		String createSystemSQL = "INSERT INTO systems (name, url) VALUES (?, ?);";
 		
 		try {
 			
-			PreparedStatement prepareStatement = dbConnection.prepareStatement(createSystemSQL);
+			PreparedStatement prepareStatement = dbConnection.prepareStatement(createSystemSQL, PreparedStatement.RETURN_GENERATED_KEYS);
 			prepareStatement.setString(1, system.getName());
 			prepareStatement.setString(2, system.getUrl());
 			
-			affectedRows = prepareStatement.executeUpdate();
+			prepareStatement.executeUpdate();
+			systemId = SqlUtils.getGeneratedIdFromResultSet(prepareStatement.getGeneratedKeys());
 			prepareStatement.close();
 			
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			
 			e.printStackTrace();
 		}
 		
-		return affectedRows;
+		return systemId;
 	}
 	
 	public List<System> getAllSystems(Connection dbConnection) {
@@ -74,7 +76,7 @@ public class SystemDAO {
 			resultSet.close();
 			prepareStatement.close();
 			
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			
 			e.printStackTrace();
 		}
