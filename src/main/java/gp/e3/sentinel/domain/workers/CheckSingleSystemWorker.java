@@ -53,21 +53,21 @@ public class CheckSingleSystemWorker implements Runnable {
 
 		this.gson = gson;
 		this.rabbitConnection = rabbitConnection;
-		
+
 		try {
-			
+
 			int prefetchCount = 1;
 			this.rabbitChannel = RabbitHandler.getRabbitChannelAndInitializeQueue(rabbitConnection, CheckAllSystemsJob.QUEUE_NAME);
 			rabbitChannel.basicQos(prefetchCount);
-			
+
 		} catch (IOException e) {
-			
+
 			e.printStackTrace();
 		}
-		
+
 		this.dataSource = dataSource;
 		this.requestRepository = requestRepository;
-		
+
 		this.httpClientBuilder = httpClientBuilder;
 		RequestConfig defaultRequestConfig = HttpUtils.getDefaultRequestConfig();
 		this.httpClientBuilder.setDefaultRequestConfig(defaultRequestConfig);
@@ -134,6 +134,18 @@ public class CheckSingleSystemWorker implements Runnable {
 		return connectionAndChannelAreOpen && dbConnectionIsOpen;
 	}
 
+	private QueueingConsumer initializeQueueConsumerIfNeeded(QueueingConsumer consumer) throws IOException {
+		
+		if (consumer == null) {
+
+			consumer = new QueueingConsumer(rabbitChannel);
+			boolean autoAck = false;
+			rabbitChannel.basicConsume(QUEUE_NAME, autoAck, consumer);
+		}
+
+		return consumer;
+	}
+
 	private Request checkSystemHealthAndReturnRequest(System system) {
 
 		Request request = null;
@@ -145,18 +157,20 @@ public class CheckSingleSystemWorker implements Runnable {
 
 		long initialTime = java.lang.System.currentTimeMillis();
 
+		CloseableHttpClient httpClient = null;
+		CloseableHttpResponse httpResponse = null;
+
 		try {
 
-			CloseableHttpClient httpClient = httpClientBuilder.build();
+			httpClient = httpClientBuilder.build();
 			HttpGet getRequest = new HttpGet(systemUrl);
 
 			String applicationJson = ContentType.APPLICATION_JSON.toString();
 			getRequest.addHeader("Accept", applicationJson);
 			getRequest.addHeader("Content-Type", applicationJson + "; charset=UTF-8");
 
-			CloseableHttpResponse httpResponse = httpClient.execute(getRequest);
+			httpResponse = httpClient.execute(getRequest);
 			long finalTime = java.lang.System.currentTimeMillis();
-
 
 			int httpResponseStatusCode = httpResponse.getStatusLine().getStatusCode();
 			String httpResponseEntity = HttpUtils.getHttpEntityAsString(httpResponse.getEntity());
@@ -181,6 +195,10 @@ public class CheckSingleSystemWorker implements Runnable {
 
 			request = new Request(requestId, systemId, systemName, systemUrl, httpResponseStatusCode, httpResponseEntity, 
 					requestExecutionDate, requestExecutionTimeInMilliseconds);
+
+		} finally {
+
+			HttpUtils.closeHttpClientAndHttpResponse(httpClient, httpResponse);
 		}
 
 		return request;
@@ -193,7 +211,7 @@ public class CheckSingleSystemWorker implements Runnable {
 	}
 
 	private String getMailBody(long requestId, Request request) {
-		
+
 		String systemInfo = "ID: " + request.getSystemId() + NEW_LINE +
 				"Name: " + request.getSystemName() + NEW_LINE +
 				"URL: " + request.getSystemUrl();
@@ -208,7 +226,7 @@ public class CheckSingleSystemWorker implements Runnable {
 		String mailBody = NEW_LINE + "The system: " + NEW_LINE + NEW_LINE + systemInfo + NEW_LINE + NEW_LINE + NEW_LINE +
 				"Failed on the following request: " + NEW_LINE + NEW_LINE + requestInfo + NEW_LINE + NEW_LINE +
 				thanks + NEW_LINE;
-		
+
 		java.lang.System.out.println("mail body:");
 		java.lang.System.out.println(mailBody);
 
@@ -223,8 +241,8 @@ public class CheckSingleSystemWorker implements Runnable {
 			mail.setHostName("smtp.gmail.com");
 			mail.setSmtpPort(587);
 
-			String senderUsername = "user@granpanda.com";
-			String senderPassword = "pwd";
+			String senderUsername = "julianespinel@granpanda.com";
+			String senderPassword = "Camilo23";
 			mail.setAuthenticator(new DefaultAuthenticator(senderUsername, senderPassword));
 			mail.setFrom(senderUsername);
 
@@ -232,11 +250,11 @@ public class CheckSingleSystemWorker implements Runnable {
 			DateTime requestExecutionDate = request.getRequestExecutionDate();
 			mail.setSubject("E3 Warning: " + systemName + " at " + requestExecutionDate.toString());
 			mail.setMsg(getMailBody(requestId, request));
-			
+
 			for (String recipient : recipients) {
 				mail.addTo(recipient);
 			}
-			
+
 			mail.send();
 
 		} catch (EmailException e) {
@@ -255,12 +273,9 @@ public class CheckSingleSystemWorker implements Runnable {
 			try {
 
 				boolean artifactsWereInitialized = initializeMqAndDatabaseArtifactsIfNeeded();
-				
-				if (artifactsWereInitialized) {
+				consumer = initializeQueueConsumerIfNeeded(consumer);
 
-					consumer = new QueueingConsumer(rabbitChannel);
-					boolean autoAck = false;
-					rabbitChannel.basicConsume(QUEUE_NAME, autoAck, consumer);
+				if (artifactsWereInitialized && consumer != null) {
 
 					Delivery delivery = consumer.nextDelivery();
 					String systemAsJsonString = new String(delivery.getBody());
@@ -273,7 +288,7 @@ public class CheckSingleSystemWorker implements Runnable {
 
 						if (!requestWasSuccessful(request)) {
 
-							String[] recipients = { "julianespinel@granpanda.com" };
+							String[] recipients = { "adrianapineda@granpanda.com", "alejandroosorio@granpanda.com", "julianespinel@granpanda.com" };
 							notifyRequestByEmail(requestId, request, recipients);
 						}
 
@@ -284,12 +299,12 @@ public class CheckSingleSystemWorker implements Runnable {
 			} catch (Exception e) {
 
 				e.printStackTrace();
-				
+
 				consumer = null;
 				RabbitHandler.closeRabbitConnection(rabbitConnection, rabbitChannel);
-				
+
 			} finally {
-				
+
 				SqlUtils.closeDbConnection(dbConnection);
 			}
 		}

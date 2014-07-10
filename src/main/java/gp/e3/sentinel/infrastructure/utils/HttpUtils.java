@@ -7,36 +7,38 @@ import java.io.InputStreamReader;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 public class HttpUtils {
-	
+
 	public static final int CONNECT_TIMEOUT_IN_MILLIS = 20000;
- 
+
 	public static String getHttpEntityAsString(HttpEntity httpEntity) throws IOException {
- 
+
 		String answer = "";
- 
+
 		if (httpEntity != null) {
- 
+
 			InputStream contentInputStream = httpEntity.getContent();
 			BufferedReader br = new BufferedReader(new InputStreamReader(contentInputStream));
- 
+
 			String line = br.readLine();
- 
+
 			while (line != null && !line.isEmpty()) {
- 
+
 				answer += line;
 				line = br.readLine();
 			}
- 
+
 		} else {
- 
+
 			answer = "The given entity response was empty.";
 		}
- 
+
 		return answer;
 	}
-	
+
 	public static RequestConfig getDefaultRequestConfig() {
 
 		RequestConfig requestConfig = RequestConfig.custom()
@@ -46,5 +48,33 @@ public class HttpUtils {
 				.build();
 
 		return requestConfig;
+	}
+
+	public static boolean closeHttpClientAndHttpResponse(CloseableHttpClient httpClient, CloseableHttpResponse httpResponse) {
+		
+		try {
+
+			if (httpResponse != null) {
+
+				httpResponse.close();
+			}
+			
+			if (httpClient != null) {
+				
+				httpClient.close();
+			}
+			
+			httpResponse = null;
+			httpClient = null;
+
+		} catch (IOException e) {
+			
+			e.printStackTrace();
+			
+			httpResponse = null;
+			httpClient = null;
+		}
+		
+		return true;
 	}
 }

@@ -34,7 +34,7 @@ public class RequestDAO {
 				+ "systemUrl VARCHAR(512) NOT NULL, "
 				+ "httpResponseStatusCode INT NOT NULL, "
 				+ "httpResponseEntity VARCHAR(5120), "
-				+ "requestExecutionDate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+				+ "requestExecutionDate TIMESTAMP NOT NULL, "
 				+ "requestExecutionTimeInMilliseconds BIGINT NOT NULL);";
 		
 		try {
@@ -55,12 +55,12 @@ public class RequestDAO {
 		
 		long requestId = 0;
 		// The request date is created automatically with the current time stamp.
-		String createRequestSQL = "INSERT INTO requests (systemId, systemName, systemUrl, httpResponseStatusCode, httpResponseEntity, requestExecutionDate"
+		String createRequestSQL = "INSERT INTO requests (systemId, systemName, systemUrl, httpResponseStatusCode, httpResponseEntity, requestExecutionDate, "
 				+ "requestExecutionTimeInMilliseconds) VALUES (?, ?, ?, ?, ?, ?, ?);";
 		
 		try {
 			
-			PreparedStatement prepareStatement = dbConnection.prepareStatement(createRequestSQL);
+			PreparedStatement prepareStatement = dbConnection.prepareStatement(createRequestSQL, PreparedStatement.RETURN_GENERATED_KEYS);
 			prepareStatement.setLong(1, request.getSystemId());
 			prepareStatement.setString(2, request.getSystemName());
 			prepareStatement.setString(3, request.getSystemUrl());
@@ -72,7 +72,6 @@ public class RequestDAO {
 			prepareStatement.executeUpdate();
 			requestId = SqlUtils.getGeneratedIdFromResultSet(prepareStatement.getGeneratedKeys());
 			prepareStatement.close();
-			
 			
 		} catch (SQLException e) {
 			
