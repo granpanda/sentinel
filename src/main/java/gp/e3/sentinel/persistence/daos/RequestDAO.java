@@ -1,6 +1,8 @@
 package gp.e3.sentinel.persistence.daos;
 
 import gp.e3.sentinel.domain.entities.Request;
+import gp.e3.sentinel.infrastructure.utils.DateUtils;
+import gp.e3.sentinel.infrastructure.utils.SqlUtils;
 import gp.e3.sentinel.persistence.mappers.RequestMapper;
 
 import java.sql.Connection;
@@ -49,12 +51,12 @@ public class RequestDAO {
 		return result;
 	}
 	
-	public int createRequest(Connection dbConnection, Request request) {
+	public long createRequest(Connection dbConnection, Request request) {
 		
-		int affectedRows = 0;
+		long requestId = 0;
 		// The request date is created automatically with the current time stamp.
-		String createRequestSQL = "INSERT INTO requests (systemId, systemName, systemUrl, httpResponseStatusCode, httpResponseEntity, "
-				+ "requestExecutionTimeInMilliseconds) VALUES (?, ?, ?, ?, ?, ?);";
+		String createRequestSQL = "INSERT INTO requests (systemId, systemName, systemUrl, httpResponseStatusCode, httpResponseEntity, requestExecutionDate"
+				+ "requestExecutionTimeInMilliseconds) VALUES (?, ?, ?, ?, ?, ?, ?);";
 		
 		try {
 			
@@ -64,9 +66,11 @@ public class RequestDAO {
 			prepareStatement.setString(3, request.getSystemUrl());
 			prepareStatement.setInt(4, request.getHttpResponseStatusCode());
 			prepareStatement.setString(5, request.getHttpResponseEntity());
-			prepareStatement.setLong(6, request.getRequestExecutionTimeInMilliseconds());
+			prepareStatement.setTimestamp(6, DateUtils.getTimestampFromDateTime(request.getRequestExecutionDate()));
+			prepareStatement.setLong(7, request.getRequestExecutionTimeInMilliseconds());
 			
-			affectedRows = prepareStatement.executeUpdate();
+			prepareStatement.executeUpdate();
+			requestId = SqlUtils.getGeneratedIdFromResultSet(prepareStatement.getGeneratedKeys());
 			prepareStatement.close();
 			
 			
@@ -75,7 +79,7 @@ public class RequestDAO {
 			e.printStackTrace();
 		}
 		
-		return affectedRows;
+		return requestId;
 	}
 	
 	public Request getRequestById(Connection dbConnection, long requestId) {

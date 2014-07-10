@@ -19,8 +19,7 @@ public class RabbitHandler {
 		factory.setHost(host);
 		factory.setAutomaticRecoveryEnabled(true);
 
-		Connection connection = factory.newConnection();
-		return connection;
+		return factory.newConnection();
 	}
 
 	public static Channel getRabbitChannelAndInitializeQueue(Connection connection, String queueName) throws IOException {
@@ -46,7 +45,17 @@ public class RabbitHandler {
 		channel.basicPublish(exchange, routingKey, properties, message.getBytes());
 		System.out.println("The following message has been published: " + message + "; in the queue: " + routingKey);
 	}
+	
+	public static void acknowledgeMessage(Channel channel, Delivery delivery) {
 
+		try {
+			channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+			System.out.println("The following delivery has been acknowledged: " + delivery.toString());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public static void closeChannel(Channel channel) {
 
 		System.out.println("Closing channel.");
@@ -64,16 +73,8 @@ public class RabbitHandler {
 				System.out.println("ERROR: Closing channel only, error message. Exception: " + e.getMessage());
 			}
 		}
-	}
-	
-	public static void acknowledgeMessage(Channel channel, Delivery delivery) {
-
-		try {
-			channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
-			System.out.println("The following delivery has been acknowledged: " + delivery.toString());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		
+		channel = null;
 	}
 
 	public static void closeRabbitConnection(Connection connection, Channel channel) {
@@ -107,5 +108,8 @@ public class RabbitHandler {
 				System.out.println("ERROR: Closing connection and channel, error message. Exception: " + e.getMessage());
 			}
 		}
+		
+		channel = null;
+		connection = null;
 	}
 }

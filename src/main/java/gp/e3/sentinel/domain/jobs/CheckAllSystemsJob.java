@@ -3,97 +3,98 @@ package gp.e3.sentinel.domain.jobs;
 import gp.e3.sentinel.domain.entities.System;
 import gp.e3.sentinel.domain.repositories.SystemRepository;
 import gp.e3.sentinel.infrastructure.mq.RabbitHandler;
+import gp.e3.sentinel.infrastructure.utils.JsonUtils;
 import gp.e3.sentinel.infrastructure.utils.SqlUtils;
+import gp.e3.sentinel.persistence.daos.SystemDAO;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.apache.commons.dbcp2.BasicDataSource;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.quartz.PersistJobDataAfterExecution;
 
 import com.google.gson.Gson;
 import com.rabbitmq.client.Channel;
 
 @DisallowConcurrentExecution
-@PersistJobDataAfterExecution
 public class CheckAllSystemsJob implements Job {
 
-	public static final String QUEUE_HOST = "localhost";
+	public static final String MQ_HOST = "localhost";
 	public static final String QUEUE_NAME = "sentinel_checkSystemsQueue";
 
 	private Gson gson;
 	private com.rabbitmq.client.Connection rabbitConnection;
 	private Channel rabbitChannel;
 
-	private BasicDataSource dataSource;
 	private Connection dbConnection;
 
 	private SystemRepository systemRepository;
 
-	private void initializeRabbitConnectionAndChannelIfNeeded(com.rabbitmq.client.Connection connection, Channel channel) {
+	private void initializeRabbitConnectionAndChannelIfNeeded() {
 
 		try {
 
-			if (connection == null || !connection.isOpen()) {
+			if (rabbitConnection == null || !rabbitConnection.isOpen()) {
 
-				RabbitHandler.closeChannel(channel);
-				connection = RabbitHandler.getRabbitConnection(QUEUE_HOST);
+				RabbitHandler.closeChannel(rabbitChannel);
+				rabbitConnection = RabbitHandler.getRabbitConnection(MQ_HOST);
 			}
 
-			if (channel == null || !channel.isOpen()) {
+			if (rabbitChannel == null || !rabbitChannel.isOpen()) {
 
-				channel = RabbitHandler.getRabbitChannelAndInitializeQueue(connection, QUEUE_NAME);
+				rabbitChannel = RabbitHandler.getRabbitChannelAndInitializeQueue(rabbitConnection, QUEUE_NAME);
 			}
 
 		} catch (IOException e) {
 
 			e.printStackTrace();
-			RabbitHandler.closeRabbitConnection(connection, channel);
+			RabbitHandler.closeRabbitConnection(rabbitConnection, rabbitChannel);
 		}
 	}
-
-	private Connection getConnection(BasicDataSource dataSource) {
-
-		Connection dbConnection = null;
-
-		try {
-			dbConnection = dataSource.getConnection();
-		} catch (SQLException e) {
-			e.printStackTrace();
+	
+	private void getInitializedDbConnectionIfNeeded() throws ClassNotFoundException, SQLException {
+		
+		if (dbConnection == null || dbConnection.isClosed()) {
+			
+			Class.forName("com.mysql.jdbc.Driver");
+			dbConnection = DriverManager.getConnection("jdbc:mysql://localhost/sentineldb", "sentinel", "sentinel12345");
 		}
-
-		return dbConnection;
 	}
 
 	private boolean initializeAttributes(JobExecutionContext context) {
 
-		gson = (Gson) context.get("gson");
-
-		rabbitConnection = (com.rabbitmq.client.Connection) context.get("rabbitConnection");
-		rabbitChannel = (Channel) context.get("rabbitChannel");
-		initializeRabbitConnectionAndChannelIfNeeded(rabbitConnection, rabbitChannel);
-
-		dataSource = (BasicDataSource) context.get("dataSource");
-		dbConnection = getConnection(dataSource);
-		systemRepository = (SystemRepository) context.get("systemRepository");
-		
-		boolean rabbitConnectionIsValid = (rabbitConnection != null && rabbitConnection.isOpen());
-		boolean rabbitChannelIsValid = (rabbitChannel != null && rabbitChannel.isOpen());
-		boolean dbConnectionIsValid = false;
+		boolean allAttributesWereSuccessfullyInitialized = false;
 		
 		try {
-			dbConnectionIsValid = (dbConnection != null && !dbConnection.isClosed());
-		} catch (SQLException e) {
+			
+			gson = JsonUtils.getDefaultGson();
+			initializeRabbitConnectionAndChannelIfNeeded();
+			getInitializedDbConnectionIfNeeded();
+			initializeSystemRepository();
+
+			boolean rabbitConnectionIsValid = (rabbitConnection != null && rabbitConnection.isOpen());
+			boolean rabbitChannelIsValid = (rabbitChannel != null && rabbitChannel.isOpen());
+			boolean dbConnectionIsValid = (dbConnection != null && !dbConnection.isClosed());
+			
+			allAttributesWereSuccessfullyInitialized = rabbitConnectionIsValid && rabbitChannelIsValid && dbConnectionIsValid;
+			
+		} catch (SQLException | ClassNotFoundException e) {
+			
 			e.printStackTrace();
+			allAttributesWereSuccessfullyInitialized = false;
 		}
-		
-		return rabbitConnectionIsValid && rabbitChannelIsValid && dbConnectionIsValid;
+
+		return allAttributesWereSuccessfullyInitialized;
+	}
+
+	private void initializeSystemRepository() {
+		SystemDAO systemDAO = new SystemDAO();
+		systemRepository = new SystemRepository(systemDAO);
 	}
 
 	@Override
@@ -117,11 +118,11 @@ public class CheckAllSystemsJob implements Job {
 		} catch (IOException e) {
 
 			e.printStackTrace();
-			RabbitHandler.closeRabbitConnection(rabbitConnection, rabbitChannel);
-			
+
 		} finally {
-			
+
 			SqlUtils.closeDbConnection(dbConnection);
+			RabbitHandler.closeRabbitConnection(rabbitConnection, rabbitChannel);
 		}
 	}
 }

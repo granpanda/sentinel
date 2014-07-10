@@ -20,15 +20,15 @@ public class RequestBusiness {
 		this.requestRepository = requestRepository;
 	}
 
-	public boolean createFailure(Request request) {
+	public long createRequest(Request request) {
 		
-		boolean failureWasCreated = false;
+		long requestId = 0;
 		Connection dbConnection = null;
 		
 		try {
 			
 			dbConnection = dataSource.getConnection();
-			failureWasCreated = requestRepository.createRequest(dbConnection, request);
+			requestId = requestRepository.createRequest(dbConnection, request);
 			dbConnection.close();
 			
 		} catch (SQLException e) {
@@ -40,6 +40,6 @@ public class RequestBusiness {
 			SqlUtils.closeDbConnection(dbConnection);
 		}
 		
-		return failureWasCreated;
+		return requestId;
 	}
 }

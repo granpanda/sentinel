@@ -9,13 +9,13 @@ public class RequestRepository {
 	
 	private final RequestDAO requestDAO;
 
-	public RequestRepository(RequestDAO failureDAO) {
+	public RequestRepository(RequestDAO requestDAO) {
 		
-		this.requestDAO = failureDAO;
+		this.requestDAO = requestDAO;
 	}
 	
-	public boolean createRequest(Connection dbConnection, Request request) {
+	public long createRequest(Connection dbConnection, Request request) {
 		
-		return (requestDAO.createRequest(dbConnection, request) == 1);
+		return requestDAO.createRequest(dbConnection, request);
 	}
 }
