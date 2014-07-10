@@ -73,7 +73,7 @@ public class RequestDAO {
 			requestId = SqlUtils.getGeneratedIdFromResultSet(prepareStatement.getGeneratedKeys());
 			prepareStatement.close();
 			
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			
 			e.printStackTrace();
 		}
@@ -97,7 +97,7 @@ public class RequestDAO {
 			resultSet.close();
 			prepareStatement.close();
 			
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			
 			e.printStackTrace();
 		}
