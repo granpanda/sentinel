@@ -1,11 +1,17 @@
 package gp.e3.sentinel.service;
 
 import gp.e3.sentinel.domain.business.SystemBusiness;
+import gp.e3.sentinel.domain.business.UserBusiness;
 import gp.e3.sentinel.domain.entities.System;
+import gp.e3.sentinel.domain.entities.User;
+
+import java.util.List;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -16,12 +22,14 @@ import javax.ws.rs.core.Response;
 public class SystemResource {
 	
 	private final SystemBusiness systemBusiness;
-
-	public SystemResource(SystemBusiness systemBusiness) {
+	private final UserBusiness userBusiness;
+	
+	public SystemResource(SystemBusiness systemBusiness, UserBusiness userBusiness) {
 		
 		this.systemBusiness = systemBusiness;
+		this.userBusiness = userBusiness;
 	}
-	
+
 	@POST
 	public Response createSystem(System system) {
 		
@@ -39,5 +47,13 @@ public class SystemResource {
 		}
 		
 		return response;
+	}
+	
+	@GET
+	@Path("/{systemId}/users")
+	public Response getAllUsersSubscribedToASystem(@PathParam("systemId") long systemId) {
+		
+		List<User> users = userBusiness.getAllUsersSubscribedToASystem(systemId);
+		return Response.status(200).entity(users).build();
 	}
 }

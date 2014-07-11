@@ -2,6 +2,7 @@ package gp.e3.sentinel.service;
 
 import static org.junit.Assert.*;
 import gp.e3.sentinel.domain.business.SystemBusiness;
+import gp.e3.sentinel.domain.business.UserBusiness;
 import gp.e3.sentinel.domain.entities.System;
 import gp.e3.sentinel.util.SystemFactoryForTests;
 
@@ -17,13 +18,15 @@ import com.yammer.dropwizard.testing.ResourceTest;
 public class SystemResourceTest extends ResourceTest {
 	
 	private SystemBusiness systemBusinessMock;
+	private UserBusiness userBusinessMock;
 	private SystemResource systemResource;
 
 	@Override
 	protected void setUpResources() throws Exception {
 		
 		systemBusinessMock = Mockito.mock(SystemBusiness.class);
-		systemResource = new SystemResource(systemBusinessMock);
+		userBusinessMock = Mockito.mock(UserBusiness.class);
+		systemResource = new SystemResource(systemBusinessMock, userBusinessMock);
 		
 		addResource(systemResource);
 	}

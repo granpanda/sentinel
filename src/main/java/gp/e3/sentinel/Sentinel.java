@@ -1,9 +1,11 @@
 package gp.e3.sentinel;
 
 import gp.e3.sentinel.domain.business.SystemBusiness;
+import gp.e3.sentinel.domain.business.UserBusiness;
 import gp.e3.sentinel.domain.jobs.CheckAllSystemsJob;
 import gp.e3.sentinel.domain.repositories.RequestRepository;
 import gp.e3.sentinel.domain.repositories.SystemRepository;
+import gp.e3.sentinel.domain.repositories.UserRepository;
 import gp.e3.sentinel.domain.workers.CheckSingleSystemWorker;
 import gp.e3.sentinel.infrastructure.MySQLConfig;
 import gp.e3.sentinel.infrastructure.mq.RabbitHandler;
@@ -11,7 +13,9 @@ import gp.e3.sentinel.infrastructure.utils.JsonUtils;
 import gp.e3.sentinel.infrastructure.utils.SqlUtils;
 import gp.e3.sentinel.persistence.daos.RequestDAO;
 import gp.e3.sentinel.persistence.daos.SystemDAO;
+import gp.e3.sentinel.persistence.daos.UserDAO;
 import gp.e3.sentinel.service.SystemResource;
+import gp.e3.sentinel.service.UserResource;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -65,6 +69,9 @@ public class Sentinel extends Service<SentinelConfig> {
 		RequestDAO requestDAO = new RequestDAO();
 		requestDAO.createRequestsTableIfDoesNotExist(dbConnection);
 
+		UserDAO userDAO = new UserDAO();
+		userDAO.createUsersTablesIfNeeded(dbConnection);
+
 		SqlUtils.closeDbConnection(dbConnection);
 	}
 
@@ -72,14 +79,6 @@ public class Sentinel extends Service<SentinelConfig> {
 
 		RequestDAO requestDAO = new RequestDAO();
 		return new RequestRepository(requestDAO);
-	}
-
-	private SystemBusiness getInitializedSystemBusiness(BasicDataSource dataSource) {
-
-		SystemDAO systemDAO = new SystemDAO();
-		SystemRepository systemRepository = new SystemRepository(systemDAO);
-
-		return new SystemBusiness(dataSource, systemRepository);
 	}
 
 	private void initializeCheckSingleSystemWorkers(int numberOfWorkers, BasicDataSource dataSource) {
@@ -103,6 +102,22 @@ public class Sentinel extends Service<SentinelConfig> {
 		}
 	}
 
+	private SystemBusiness getInitializedSystemBusiness(BasicDataSource dataSource) {
+
+		SystemDAO systemDAO = new SystemDAO();
+		SystemRepository systemRepository = new SystemRepository(systemDAO);
+
+		return new SystemBusiness(dataSource, systemRepository);
+	}
+
+	private UserBusiness getInitializedUserBusiness(BasicDataSource dataSource) {
+
+		UserDAO userDAO = new UserDAO();
+		UserRepository userRepository = new UserRepository(userDAO);
+
+		return new UserBusiness(dataSource, userRepository);
+	}
+
 	@Override
 	public void run(SentinelConfig configuration, Environment environment) throws Exception {
 
@@ -114,7 +129,9 @@ public class Sentinel extends Service<SentinelConfig> {
 
 		SystemBusiness systemBusiness = getInitializedSystemBusiness(dataSource);
 		systemBusiness.executeCheckAllSystemsJobForever();
+		UserBusiness userBusiness = getInitializedUserBusiness(dataSource);
 
-		environment.addResource(new SystemResource(systemBusiness));
+		environment.addResource(new SystemResource(systemBusiness, userBusiness));
+		environment.addResource(new UserResource(userBusiness));
 	}
 }
