@@ -6,7 +6,6 @@ import gp.e3.sentinel.persistence.mappers.UserMapper;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,9 +43,7 @@ public class UserDAO {
 		int result = 0;
 		String createUsersTableTableIfDoesNotExistSQL = "CREATE TABLE IF NOT EXISTS systems_users "
 				+ "(systemId BIGINT, userMail VARCHAR(128), "
-				+ "PRIMARY KEY (systemId, userMail), "
-				+ "FOREIGN KEY (systemId) REFERENCES systems (id), "
-				+ "FOREIGN KEY (mail) REFERENCES users (mail));";
+				+ "PRIMARY KEY (systemId, userMail));";
 
 		try {
 
@@ -140,13 +137,16 @@ public class UserDAO {
 
 	public int createUser(Connection dbConnection, User user) {
 
-		int createUserIntoUsersTableResult = createUserIntoUsersTable(dbConnection, user);
-		int systemsUserIsSubscribedTo = subscribeUserToSystems(dbConnection, user.getMail(), user.getSystemsUserIsSubscribedTo());
-
 		int result = 0;
 
-		if (createUserIntoUsersTableResult == 1 && systemsUserIsSubscribedTo != 0) {
-			result = 1;
+		if (user != null) {
+
+			int createUserIntoUsersTableResult = createUserIntoUsersTable(dbConnection, user);
+			int systemsUserIsSubscribedTo = subscribeUserToSystems(dbConnection, user.getMail(), user.getSystemsUserIsSubscribedTo());
+
+			if (createUserIntoUsersTableResult == 1 && systemsUserIsSubscribedTo != 0) {
+				result = 1;
+			}
 		}
 
 		return result;
@@ -219,7 +219,7 @@ public class UserDAO {
 			resultSet.close();
 			prepareStatement.close();
 
-		} catch (SQLException e) {
+		} catch (Exception e) {
 
 			e.printStackTrace();
 		}

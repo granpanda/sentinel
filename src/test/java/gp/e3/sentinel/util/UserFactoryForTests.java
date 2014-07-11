@@ -33,6 +33,14 @@ public class UserFactoryForTests {
 		return new User(mail, fullName, systemsUserIsSubscribedTo);
 	}
 	
+	public static User getUserSubscribedToSystems(int number, List<Long> systemsUserIsSubscribedTo) {
+		
+		String mail = "user" + number + "@user.com";
+		String fullName = "Full Name " + number;
+		
+		return new User(mail, fullName, systemsUserIsSubscribedTo);
+	}
+	
 	public static List<User> getUsersList(int listSize) {
 		
 		List<User> users = new ArrayList<User>();
