@@ -238,13 +238,13 @@ public class CheckSingleSystemWorker implements Runnable {
 		try {
 
 			Email mail = new SimpleEmail();
-			mail.setHostName("smtp.gmail.com");
+			mail.setHostName("email-smtp.us-east-1.amazonaws.com");
 			mail.setSmtpPort(587);
 
-			String senderUsername = "julianespinel@granpanda.com";
-			String senderPassword = "Camilo23";
+			String senderUsername = "AKIAJ5EVDTHM3TU4TLNQ";
+			String senderPassword = "AthPDnt5KuSTTbBdcm2JScQvaON18ZIu8x082A0oxy7s";
 			mail.setAuthenticator(new DefaultAuthenticator(senderUsername, senderPassword));
-			mail.setFrom(senderUsername);
+			mail.setFrom("e3.granpanda@gmail.com");
 
 			String systemName = request.getSystemName();
 			DateTime requestExecutionDate = request.getRequestExecutionDate();
@@ -288,7 +288,8 @@ public class CheckSingleSystemWorker implements Runnable {
 
 						if (!requestWasSuccessful(request)) {
 
-							String[] recipients = { "adrianapineda@granpanda.com", "alejandroosorio@granpanda.com", "julianespinel@granpanda.com" };
+							String[] recipients = { "adrianapineda@granpanda.com", "stephaneleybold@granpanda.com", 
+													"alejandroosorio@granpanda.com", "julianespinel@granpanda.com" };
 							notifyRequestByEmail(requestId, request, recipients);
 						}
 
