@@ -6,7 +6,6 @@ import gp.e3.sentinel.domain.repositories.SystemRepository;
 import gp.e3.sentinel.infrastructure.utils.SqlUtils;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,7 +13,6 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
 import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
@@ -41,7 +39,7 @@ public class SystemBusiness {
 			dbConnection = dataSource.getConnection();
 			systemId = systemRepository.createSystem(dbConnection, system);
 			
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			
 			e.printStackTrace();
 			
@@ -63,7 +61,7 @@ public class SystemBusiness {
 			dbConnection = dataSource.getConnection();
 			systems = systemRepository.getAllSystems(dbConnection);
 			
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			
 			e.printStackTrace();
 			
@@ -99,7 +97,7 @@ public class SystemBusiness {
 			scheduler.start();
 			scheduler.scheduleJob(jobDetail, trigger);
 			
-		} catch (SchedulerException e) {
+		} catch (Exception e) {
 			
 			e.printStackTrace();
 		}
