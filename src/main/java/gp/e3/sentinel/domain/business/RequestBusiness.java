@@ -5,7 +5,6 @@ import gp.e3.sentinel.domain.repositories.RequestRepository;
 import gp.e3.sentinel.infrastructure.utils.SqlUtils;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 
@@ -31,7 +30,7 @@ public class RequestBusiness {
 			requestId = requestRepository.createRequest(dbConnection, request);
 			dbConnection.close();
 			
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			
 			e.printStackTrace();
 			
