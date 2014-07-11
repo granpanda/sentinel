@@ -9,15 +9,15 @@ public class User {
 	
 	private final String mail;
 	private final String fullName;
-	private final List<Long> systemsWhichIsSubscribedTo;
+	private final List<Long> systemsUserIsSubscribedTo;
 	
 	@JsonCreator
 	public User(@JsonProperty("mail") String mail, @JsonProperty("fullName") String fullName, 
-			@JsonProperty("systemsWhichIsSubscribedTo") List<Long> systemsWhichIsSubscribedTo) {
+			@JsonProperty("systemsUserIsSubscribedTo") List<Long> systemsUserIsSubscribedTo) {
 		
 		this.mail = mail;
 		this.fullName = fullName;
-		this.systemsWhichIsSubscribedTo = systemsWhichIsSubscribedTo;
+		this.systemsUserIsSubscribedTo = systemsUserIsSubscribedTo;
 	}
 
 	public String getMail() {
@@ -28,7 +28,7 @@ public class User {
 		return fullName;
 	}
 
-	public List<Long> getSystemsWhichIsSubscribedTo() {
-		return systemsWhichIsSubscribedTo;
+	public List<Long> getSystemsUserIsSubscribedTo() {
+		return systemsUserIsSubscribedTo;
 	}
 }
