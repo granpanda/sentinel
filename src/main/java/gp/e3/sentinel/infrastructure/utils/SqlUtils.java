@@ -23,8 +23,8 @@ public class SqlUtils {
 
 			try {
 				dbConnection.rollback();
-			} catch (SQLException e1) {
-				e1.printStackTrace();
+			} catch (SQLException e) {
+				e.printStackTrace();
 			}
 		}
 	}
