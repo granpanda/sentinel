@@ -1,12 +1,16 @@
 package gp.e3.sentinel.domain.entities;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class System {
 	
 	private final long id;
 	private final String name;
 	private final String url;
 	
-	public System(long id, String name, String url) {
+	@JsonCreator
+	public System(@JsonProperty("id") long id, @JsonProperty("name") String name, @JsonProperty("url") String url) {
 		
 		this.id = id;
 		this.name = name;
