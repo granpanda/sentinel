@@ -1,10 +1,15 @@
 package gp.e3.sentinel.service;
 
 import static org.junit.Assert.*;
+
+import java.util.List;
+
 import gp.e3.sentinel.domain.business.SystemBusiness;
 import gp.e3.sentinel.domain.business.UserBusiness;
 import gp.e3.sentinel.domain.entities.System;
+import gp.e3.sentinel.domain.entities.User;
 import gp.e3.sentinel.util.SystemFactoryForTests;
+import gp.e3.sentinel.util.UserFactoryForTests;
 
 import javax.ws.rs.core.MediaType;
 
@@ -70,5 +75,45 @@ public class SystemResourceTest extends ResourceTest {
 		
 		Boolean systemWasCreated = httpResponse.getEntity(Boolean.class);
 		assertEquals(false, systemWasCreated);
+	}
+	
+	@Test
+	public void testGetAllUsersSubscribedToASystem_OK() {
+		
+		System system = SystemFactoryForTests.getDefaultSystem();
+		long systemId = system.getId();
+		
+		int listSize = 5;
+		List<User> expectedUsersList = UserFactoryForTests.getUsersList(listSize);
+		Mockito.when(userBusinessMock.getAllUsersSubscribedToASystem(systemId)).thenReturn(expectedUsersList);
+		
+		String url = "/systems/" + systemId + "/users";
+		ClientResponse httpResponse = getDefaultHttpRequest(url).get(ClientResponse.class);
+		
+		assertEquals(200, httpResponse.getStatus());
+		
+		List<User> retrievedUsersList = httpResponse.getEntity(List.class);
+		assertNotNull(retrievedUsersList);
+		assertEquals(listSize, retrievedUsersList.size());
+	}
+	
+	@Test
+	public void testGetAllUsersSubscribedToASystem_NOK() {
+		
+		System system = SystemFactoryForTests.getDefaultSystem();
+		long systemId = system.getId();
+		
+		int listSize = 0;
+		List<User> expectedUsersList = UserFactoryForTests.getUsersList(listSize);
+		Mockito.when(userBusinessMock.getAllUsersSubscribedToASystem(systemId)).thenReturn(expectedUsersList);
+		
+		String url = "/systems/" + systemId + "/users";
+		ClientResponse httpResponse = getDefaultHttpRequest(url).get(ClientResponse.class);
+		
+		assertEquals(200, httpResponse.getStatus());
+		
+		List<User> retrievedUsersList = httpResponse.getEntity(List.class);
+		assertNotNull(retrievedUsersList);
+		assertEquals(listSize, retrievedUsersList.size());
 	}
 }
