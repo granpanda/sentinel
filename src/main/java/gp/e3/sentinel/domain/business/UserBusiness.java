@@ -5,7 +5,6 @@ import gp.e3.sentinel.domain.repositories.UserRepository;
 import gp.e3.sentinel.infrastructure.utils.SqlUtils;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -83,7 +82,7 @@ public class UserBusiness {
 			dbConnection = dataSource.getConnection();
 			users = userRepository.getAllUsersSubscribedToASystem(dbConnection, systemId);
 			
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			
 			e.printStackTrace();
 			
