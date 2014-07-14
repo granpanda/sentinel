@@ -33,7 +33,7 @@ public class System implements Comparable<System> {
 	
 	public static boolean isValidSystem(System system) {
 		
-		return (system.getId() > 0) && (!StringUtils.isBlank(system.getName())) && (!StringUtils.isBlank(system.getUrl()));
+		return (system != null) && (system.getId() > 0) && (!StringUtils.isBlank(system.getName())) && (!StringUtils.isBlank(system.getUrl()));
 	}
 
 	@Override

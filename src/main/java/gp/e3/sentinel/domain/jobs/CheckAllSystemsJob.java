@@ -33,7 +33,6 @@ public class CheckAllSystemsJob implements Job {
 	private Channel rabbitChannel;
 
 	private Connection dbConnection;
-
 	private SystemRepository systemRepository;
 
 	private void initializeRabbitConnectionAndChannelIfNeeded() {
