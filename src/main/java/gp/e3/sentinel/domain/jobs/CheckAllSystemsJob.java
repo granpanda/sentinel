@@ -5,6 +5,7 @@ import gp.e3.sentinel.domain.repositories.SystemRepository;
 import gp.e3.sentinel.infrastructure.mq.RabbitHandler;
 import gp.e3.sentinel.infrastructure.utils.JsonUtils;
 import gp.e3.sentinel.infrastructure.utils.SqlUtils;
+import gp.e3.sentinel.persistence.daos.SystemCacheDAO;
 import gp.e3.sentinel.persistence.daos.SystemDAO;
 
 import java.io.IOException;
@@ -93,8 +94,11 @@ public class CheckAllSystemsJob implements Job {
 	}
 
 	private void initializeSystemRepository() {
+		
 		SystemDAO systemDAO = new SystemDAO();
-		systemRepository = new SystemRepository(systemDAO);
+		SystemCacheDAO systemCacheDAO = new SystemCacheDAO(gson);
+		
+		systemRepository = new SystemRepository(systemDAO, systemCacheDAO);
 	}
 
 	@Override

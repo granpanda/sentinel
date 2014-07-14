@@ -1,5 +1,7 @@
 package gp.e3.sentinel.domain.entities;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -27,5 +29,10 @@ public class System {
 
 	public String getUrl() {
 		return url;
+	}
+	
+	public static boolean isValidSystem(System system) {
+		
+		return (system.getId() > 0) && (!StringUtils.isBlank(system.getName())) && (!StringUtils.isBlank(system.getUrl()));
 	}
 }

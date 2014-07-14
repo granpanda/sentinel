@@ -7,11 +7,13 @@ import gp.e3.sentinel.domain.repositories.RequestRepository;
 import gp.e3.sentinel.domain.repositories.SystemRepository;
 import gp.e3.sentinel.domain.repositories.UserRepository;
 import gp.e3.sentinel.domain.workers.CheckSingleSystemWorker;
-import gp.e3.sentinel.infrastructure.MySQLConfig;
+import gp.e3.sentinel.infrastructure.config.MySQLConfig;
+import gp.e3.sentinel.infrastructure.config.RedisConfig;
 import gp.e3.sentinel.infrastructure.mq.RabbitHandler;
 import gp.e3.sentinel.infrastructure.utils.JsonUtils;
 import gp.e3.sentinel.infrastructure.utils.SqlUtils;
 import gp.e3.sentinel.persistence.daos.RequestDAO;
+import gp.e3.sentinel.persistence.daos.SystemCacheDAO;
 import gp.e3.sentinel.persistence.daos.SystemDAO;
 import gp.e3.sentinel.persistence.daos.UserDAO;
 import gp.e3.sentinel.service.SystemResource;
@@ -23,6 +25,10 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.http.impl.client.HttpClientBuilder;
+
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.Protocol;
 
 import com.google.gson.Gson;
 import com.rabbitmq.client.Connection;
@@ -60,6 +66,14 @@ public class Sentinel extends Service<SentinelConfig> {
 
 		return dataSource;
 	}
+	
+	private JedisPool getInitializedRedisPool(RedisConfig redisConfig) {
+		
+		JedisPool jedisPool = new JedisPool(new JedisPoolConfig(), redisConfig.getHost(), redisConfig.getPort(), 
+				Protocol.DEFAULT_TIMEOUT, null, redisConfig.getSentinelDatabase());
+
+		return jedisPool;
+	}
 
 	private void createTablesIfNeeded(java.sql.Connection dbConnection) {
 
@@ -75,13 +89,26 @@ public class Sentinel extends Service<SentinelConfig> {
 		SqlUtils.closeDbConnection(dbConnection);
 	}
 
+	private UserRepository getUserRepository() {
+		
+		UserDAO userDAO = new UserDAO();
+		return new UserRepository(userDAO);
+	}
+	
+	private SystemRepository getSystemRepository(Gson gson) {
+		
+		SystemDAO systemDAO = new SystemDAO();
+		SystemCacheDAO systemCacheDAO = new SystemCacheDAO(gson);
+		return new SystemRepository(systemDAO, systemCacheDAO);
+	}
+	
 	private RequestRepository getRequestRepository() {
 
 		RequestDAO requestDAO = new RequestDAO();
 		return new RequestRepository(requestDAO);
 	}
 
-	private void initializeCheckSingleSystemWorkers(int numberOfWorkers, BasicDataSource dataSource) {
+	private void initializeCheckSingleSystemWorkers(int numberOfWorkers, BasicDataSource dataSource, JedisPool redisPool) {
 
 		try {
 
@@ -92,8 +119,11 @@ public class Sentinel extends Service<SentinelConfig> {
 
 			for (int i = 0; i < numberOfWorkers; i++) {
 
+				UserRepository userRepository = getUserRepository();
+				SystemRepository systemRepository = getSystemRepository(gson);
 				RequestRepository requestRepository = getRequestRepository();
-				fixedThreadPool.submit(new CheckSingleSystemWorker(gson, rabbitConnection, dataSource, requestRepository, HttpClientBuilder.create()));
+				fixedThreadPool.submit(new CheckSingleSystemWorker(gson, rabbitConnection, dataSource, redisPool, userRepository, 
+						systemRepository, requestRepository, HttpClientBuilder.create()));
 			}
 
 		} catch (IOException e) {
@@ -102,12 +132,12 @@ public class Sentinel extends Service<SentinelConfig> {
 		}
 	}
 
-	private SystemBusiness getInitializedSystemBusiness(BasicDataSource dataSource) {
+	private SystemBusiness getInitializedSystemBusiness(BasicDataSource dataSource, JedisPool redisPool) {
 
-		SystemDAO systemDAO = new SystemDAO();
-		SystemRepository systemRepository = new SystemRepository(systemDAO);
+		Gson gson = JsonUtils.getDefaultGson();
+		SystemRepository systemRepository = getSystemRepository(gson);
 
-		return new SystemBusiness(dataSource, systemRepository);
+		return new SystemBusiness(dataSource, redisPool, systemRepository);
 	}
 
 	private UserBusiness getInitializedUserBusiness(BasicDataSource dataSource) {
@@ -123,11 +153,13 @@ public class Sentinel extends Service<SentinelConfig> {
 
 		BasicDataSource dataSource = getInitializedDataSource(configuration.getMySQLConfig());
 		createTablesIfNeeded(dataSource.getConnection());
+		
+		JedisPool redisPool = getInitializedRedisPool(configuration.getRedisConfig());
 
 		int numberOfWorkers = 5;
-		initializeCheckSingleSystemWorkers(numberOfWorkers, dataSource);
+		initializeCheckSingleSystemWorkers(numberOfWorkers, dataSource, redisPool);
 
-		SystemBusiness systemBusiness = getInitializedSystemBusiness(dataSource);
+		SystemBusiness systemBusiness = getInitializedSystemBusiness(dataSource, redisPool);
 		systemBusiness.executeCheckAllSystemsJobForever();
 		UserBusiness userBusiness = getInitializedUserBusiness(dataSource);
 

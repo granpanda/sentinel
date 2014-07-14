@@ -18,17 +18,21 @@ import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
 
+import redis.clients.jedis.JedisPool;
+
 public class SystemBusiness {
 	
 	private final BasicDataSource dataSource;
+	private final JedisPool redisPool;
 	private final SystemRepository systemRepository;
 	
-	public SystemBusiness(BasicDataSource dataSource, SystemRepository systemRepository) {
+	public SystemBusiness(BasicDataSource dataSource, JedisPool redisPool, SystemRepository systemRepository) {
 		
 		this.dataSource = dataSource;
+		this.redisPool = redisPool;
 		this.systemRepository = systemRepository;
 	}
-	
+
 	public long createSystem(System system) {
 		
 		long systemId = 0;

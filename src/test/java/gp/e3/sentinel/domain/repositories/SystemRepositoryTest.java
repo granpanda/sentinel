@@ -2,6 +2,7 @@ package gp.e3.sentinel.domain.repositories;
 
 import static org.junit.Assert.*;
 import gp.e3.sentinel.domain.entities.System;
+import gp.e3.sentinel.persistence.daos.SystemCacheDAO;
 import gp.e3.sentinel.persistence.daos.SystemDAO;
 import gp.e3.sentinel.util.SystemFactoryForTests;
 
@@ -16,15 +17,21 @@ import org.mockito.Mockito;
 public class SystemRepositoryTest {
 
 	private Connection dbConnectionMock;
+	
 	private SystemDAO systemDAOMock;
+	private SystemCacheDAO systemCacheDAOMock;
+	
 	private SystemRepository systemRepository;
 	
 	@Before
 	public void setUp() {
 		
 		dbConnectionMock = Mockito.mock(Connection.class);
+		
 		systemDAOMock = Mockito.mock(SystemDAO.class);
-		systemRepository = new SystemRepository(systemDAOMock);
+		systemCacheDAOMock = Mockito.mock(SystemCacheDAO.class);
+		
+		systemRepository = new SystemRepository(systemDAOMock, systemCacheDAOMock);
 	}
 	
 	@After

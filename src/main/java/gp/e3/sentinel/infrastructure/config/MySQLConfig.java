@@ -1,4 +1,4 @@
-package gp.e3.sentinel.infrastructure;
+package gp.e3.sentinel.infrastructure.config;
 
 import javax.validation.constraints.NotNull;
 

@@ -15,10 +15,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import redis.clients.jedis.JedisPool;
+
 public class SystemBusinessTest {
 	
 	private Connection dbConnectionMock;
 	private BasicDataSource dataSourceMock;
+	
+	private JedisPool redisPoolMock;
+	
 	private SystemRepository systemRepositoryMock;
 	private SystemBusiness systemBusiness;
 	
@@ -33,8 +38,10 @@ public class SystemBusinessTest {
 			e.printStackTrace();
 		}
 		
+		redisPoolMock = Mockito.mock(JedisPool.class);
+		
 		systemRepositoryMock = Mockito.mock(SystemRepository.class);
-		systemBusiness = new SystemBusiness(dataSourceMock, systemRepositoryMock);
+		systemBusiness = new SystemBusiness(dataSourceMock, redisPoolMock, systemRepositoryMock);
 	}
 	
 	@After

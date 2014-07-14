@@ -2,14 +2,18 @@ package gp.e3.sentinel.domain.workers;
 
 import gp.e3.sentinel.domain.entities.Request;
 import gp.e3.sentinel.domain.entities.System;
+import gp.e3.sentinel.domain.entities.User;
 import gp.e3.sentinel.domain.jobs.CheckAllSystemsJob;
 import gp.e3.sentinel.domain.repositories.RequestRepository;
+import gp.e3.sentinel.domain.repositories.SystemRepository;
+import gp.e3.sentinel.domain.repositories.UserRepository;
 import gp.e3.sentinel.infrastructure.mq.RabbitHandler;
 import gp.e3.sentinel.infrastructure.utils.HttpUtils;
 import gp.e3.sentinel.infrastructure.utils.SqlUtils;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.mail.DefaultAuthenticator;
@@ -23,6 +27,9 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.joda.time.DateTime;
+
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 
 import com.google.gson.Gson;
 import com.rabbitmq.client.Channel;
@@ -44,12 +51,17 @@ public class CheckSingleSystemWorker implements Runnable {
 
 	private java.sql.Connection dbConnection;
 	private final BasicDataSource dataSource;
+	
+	private Jedis redisClient;
+	private JedisPool redisPool;
 
+	private final UserRepository userRepository;
+	private final SystemRepository systemRepository;
 	private final RequestRepository requestRepository;
 	private final HttpClientBuilder httpClientBuilder;
 
-	public CheckSingleSystemWorker(Gson gson, Connection rabbitConnection, BasicDataSource dataSource, 
-			RequestRepository requestRepository, HttpClientBuilder httpClientBuilder) {
+	public CheckSingleSystemWorker(Gson gson, Connection rabbitConnection, BasicDataSource dataSource, JedisPool redisPool, UserRepository userRepository, 
+			SystemRepository systemRepository, RequestRepository requestRepository, HttpClientBuilder httpClientBuilder) {
 
 		this.gson = gson;
 		this.rabbitConnection = rabbitConnection;
@@ -66,6 +78,10 @@ public class CheckSingleSystemWorker implements Runnable {
 		}
 
 		this.dataSource = dataSource;
+		this.redisPool = redisPool;
+		
+		this.userRepository = userRepository;
+		this.systemRepository = systemRepository;
 		this.requestRepository = requestRepository;
 
 		this.httpClientBuilder = httpClientBuilder;
@@ -125,13 +141,20 @@ public class CheckSingleSystemWorker implements Runnable {
 
 		return dbConnectionIsOpen;
 	}
+	
+	private boolean initializeRedisClient() {
+		
+		redisClient = redisPool.getResource();
+		return redisClient.isConnected();
+	}
 
 	private boolean initializeMqAndDatabaseArtifactsIfNeeded() {
 
 		boolean connectionAndChannelAreOpen = initializeRabbitConnectionAndChannelIfNeeded();
 		boolean dbConnectionIsOpen = initializeDbConnection();
+		boolean redisClientIsConnected = initializeRedisClient();
 
-		return connectionAndChannelAreOpen && dbConnectionIsOpen;
+		return connectionAndChannelAreOpen && dbConnectionIsOpen && redisClientIsConnected;
 	}
 
 	private QueueingConsumer initializeQueueConsumerIfNeeded(QueueingConsumer consumer) throws IOException {
@@ -233,7 +256,7 @@ public class CheckSingleSystemWorker implements Runnable {
 		return mailBody;
 	}
 
-	private void notifyRequestByEmail(long requestId, Request request, String[] recipients) {
+	private void notifyRequestByEmail(long requestId, Request request, List<User> systemUsers) {
 
 		try {
 
@@ -251,8 +274,9 @@ public class CheckSingleSystemWorker implements Runnable {
 			mail.setSubject("E3 Warning: " + systemName + " at " + requestExecutionDate.toString());
 			mail.setMsg(getMailBody(requestId, request));
 
-			for (String recipient : recipients) {
-				mail.addTo(recipient);
+			for (User user : systemUsers) {
+				
+				mail.addTo(user.getMail());
 			}
 
 			mail.send();
@@ -279,7 +303,9 @@ public class CheckSingleSystemWorker implements Runnable {
 
 					Delivery delivery = consumer.nextDelivery();
 					String systemAsJsonString = new String(delivery.getBody());
+					
 					System system = gson.fromJson(systemAsJsonString, System.class);
+					long systemId = system.getId();
 
 					Request request = checkSystemHealthAndReturnRequest(system);
 					long requestId = requestRepository.createRequest(dbConnection, request);
@@ -287,10 +313,17 @@ public class CheckSingleSystemWorker implements Runnable {
 					if (request != null && requestId != 0) {
 
 						if (!requestWasSuccessful(request)) {
-
-							String[] recipients = { "adrianapineda@granpanda.com", "stephaneleybold@granpanda.com", 
-													"alejandroosorio@granpanda.com", "julianespinel@granpanda.com" };
-							notifyRequestByEmail(requestId, request, recipients);
+							
+							if (!systemRepository.isSystemInCache(redisClient, systemId)) {
+								
+								List<User> systemUsers = userRepository.getAllUsersSubscribedToASystem(dbConnection, systemId);
+								notifyRequestByEmail(requestId, request, systemUsers);
+								systemRepository.addSystemToCacheWithTimeToLive(redisClient, system);
+							}
+							
+						} else {
+							
+							systemRepository.deleteSystemFromCache(redisClient, systemId);
 						}
 
 						RabbitHandler.acknowledgeMessage(rabbitChannel, delivery);
@@ -307,6 +340,7 @@ public class CheckSingleSystemWorker implements Runnable {
 			} finally {
 
 				SqlUtils.closeDbConnection(dbConnection);
+				redisPool.returnResource(redisClient);
 			}
 		}
 	}
