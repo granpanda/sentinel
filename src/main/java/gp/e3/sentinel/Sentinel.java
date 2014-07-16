@@ -9,6 +9,9 @@ import gp.e3.sentinel.domain.repositories.UserRepository;
 import gp.e3.sentinel.domain.workers.CheckSingleSystemWorker;
 import gp.e3.sentinel.infrastructure.config.MySQLConfig;
 import gp.e3.sentinel.infrastructure.config.RedisConfig;
+import gp.e3.sentinel.infrastructure.healthchecks.MySQLHealthCheck;
+import gp.e3.sentinel.infrastructure.healthchecks.RabbitMQHealthCheck;
+import gp.e3.sentinel.infrastructure.healthchecks.RedisHealthCheck;
 import gp.e3.sentinel.infrastructure.mq.RabbitHandler;
 import gp.e3.sentinel.infrastructure.utils.JsonUtils;
 import gp.e3.sentinel.infrastructure.utils.SqlUtils;
@@ -20,6 +23,7 @@ import gp.e3.sentinel.service.SystemResource;
 import gp.e3.sentinel.service.UserResource;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -66,9 +70,9 @@ public class Sentinel extends Service<SentinelConfig> {
 
 		return dataSource;
 	}
-	
+
 	private JedisPool getInitializedRedisPool(RedisConfig redisConfig) {
-		
+
 		JedisPool jedisPool = new JedisPool(new JedisPoolConfig(), redisConfig.getHost(), redisConfig.getPort(), 
 				Protocol.DEFAULT_TIMEOUT, null, redisConfig.getSentinelDatabase());
 
@@ -90,18 +94,18 @@ public class Sentinel extends Service<SentinelConfig> {
 	}
 
 	private UserRepository getUserRepository() {
-		
+
 		UserDAO userDAO = new UserDAO();
 		return new UserRepository(userDAO);
 	}
-	
+
 	private SystemRepository getSystemRepository(Gson gson) {
-		
+
 		SystemDAO systemDAO = new SystemDAO();
 		SystemCacheDAO systemCacheDAO = new SystemCacheDAO(gson);
 		return new SystemRepository(systemDAO, systemCacheDAO);
 	}
-	
+
 	private RequestRepository getRequestRepository() {
 
 		RequestDAO requestDAO = new RequestDAO();
@@ -148,12 +152,40 @@ public class Sentinel extends Service<SentinelConfig> {
 		return new UserBusiness(dataSource, userRepository);
 	}
 
+	private void addMySQLHealthCheck(Environment environment, BasicDataSource dataSource) {
+
+		try {
+			environment.addHealthCheck(new MySQLHealthCheck("mysql", dataSource.getConnection()));
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void addRabbitHealthCheck(Environment environment) {
+
+		try {
+
+			String host = "localhost";
+			com.rabbitmq.client.Connection rabbitConnection = RabbitHandler.getRabbitConnection(host);
+			environment.addHealthCheck(new RabbitMQHealthCheck("rabbit-mq", rabbitConnection));
+
+		} catch (IOException e) {
+
+			e.printStackTrace();
+		}
+	}
+
+	private void addRedisHealthCheck(Environment environment, JedisPool redisPool) {
+
+		environment.addHealthCheck(new RedisHealthCheck("redis", redisPool.getResource()));
+	}
+
 	@Override
 	public void run(SentinelConfig configuration, Environment environment) throws Exception {
 
 		BasicDataSource dataSource = getInitializedDataSource(configuration.getMySQLConfig());
 		createTablesIfNeeded(dataSource.getConnection());
-		
+
 		JedisPool redisPool = getInitializedRedisPool(configuration.getRedisConfig());
 
 		int numberOfWorkers = 5;
@@ -163,7 +195,13 @@ public class Sentinel extends Service<SentinelConfig> {
 		systemBusiness.executeCheckAllSystemsJobForever();
 		UserBusiness userBusiness = getInitializedUserBusiness(dataSource);
 
+		// Add resources
 		environment.addResource(new SystemResource(systemBusiness, userBusiness));
 		environment.addResource(new UserResource(userBusiness));
+		
+		// Add health checks
+		addMySQLHealthCheck(environment, dataSource);
+		addRabbitHealthCheck(environment);
+		addRedisHealthCheck(environment, redisPool);
 	}
 }
