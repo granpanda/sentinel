@@ -16,20 +16,16 @@ import org.quartz.Scheduler;
 import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
-import org.quartz.impl.StdSchedulerFactory;
-
-import redis.clients.jedis.JedisPool;
+import org.quartz.impl.DirectSchedulerFactory;
 
 public class SystemBusiness {
 	
 	private final BasicDataSource dataSource;
-	private final JedisPool redisPool;
 	private final SystemRepository systemRepository;
 	
-	public SystemBusiness(BasicDataSource dataSource, JedisPool redisPool, SystemRepository systemRepository) {
+	public SystemBusiness(BasicDataSource dataSource, SystemRepository systemRepository) {
 		
 		this.dataSource = dataSource;
-		this.redisPool = redisPool;
 		this.systemRepository = systemRepository;
 	}
 
@@ -81,7 +77,10 @@ public class SystemBusiness {
 		
 		try {
 			
-			Scheduler scheduler = new StdSchedulerFactory().getScheduler();
+			int maxThreads = 1;
+			DirectSchedulerFactory instance = DirectSchedulerFactory.getInstance();
+			instance.createVolatileScheduler(maxThreads);
+			Scheduler scheduler = instance.getScheduler();
 			
 			JobDetail jobDetail = JobBuilder.newJob(CheckAllSystemsJob.class)
 					.withIdentity("checkAllSystemsJob")

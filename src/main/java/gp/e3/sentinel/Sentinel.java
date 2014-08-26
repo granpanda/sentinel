@@ -136,12 +136,12 @@ public class Sentinel extends Service<SentinelConfig> {
 		}
 	}
 
-	private SystemBusiness getInitializedSystemBusiness(BasicDataSource dataSource, JedisPool redisPool) {
+	private SystemBusiness getInitializedSystemBusiness(BasicDataSource dataSource) {
 
 		Gson gson = JsonUtils.getDefaultGson();
 		SystemRepository systemRepository = getSystemRepository(gson);
 
-		return new SystemBusiness(dataSource, redisPool, systemRepository);
+		return new SystemBusiness(dataSource, systemRepository);
 	}
 
 	private UserBusiness getInitializedUserBusiness(BasicDataSource dataSource) {
@@ -186,12 +186,11 @@ public class Sentinel extends Service<SentinelConfig> {
 		BasicDataSource dataSource = getInitializedDataSource(configuration.getMySQLConfig());
 		createTablesIfNeeded(dataSource.getConnection());
 
-		JedisPool redisPool = getInitializedRedisPool(configuration.getRedisConfig());
-
 		int numberOfWorkers = 5;
+		JedisPool redisPool = getInitializedRedisPool(configuration.getRedisConfig());
 		initializeCheckSingleSystemWorkers(numberOfWorkers, dataSource, redisPool);
 
-		SystemBusiness systemBusiness = getInitializedSystemBusiness(dataSource, redisPool);
+		SystemBusiness systemBusiness = getInitializedSystemBusiness(dataSource);
 		systemBusiness.executeCheckAllSystemsJobForever();
 		UserBusiness userBusiness = getInitializedUserBusiness(dataSource);
 

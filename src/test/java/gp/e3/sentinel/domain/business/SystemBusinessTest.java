@@ -1,6 +1,7 @@
 package gp.e3.sentinel.domain.business;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import gp.e3.sentinel.domain.entities.System;
 import gp.e3.sentinel.domain.repositories.SystemRepository;
 import gp.e3.sentinel.util.SystemFactoryForTests;
@@ -15,14 +16,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import redis.clients.jedis.JedisPool;
-
 public class SystemBusinessTest {
 	
 	private Connection dbConnectionMock;
 	private BasicDataSource dataSourceMock;
-	
-	private JedisPool redisPoolMock;
 	
 	private SystemRepository systemRepositoryMock;
 	private SystemBusiness systemBusiness;
@@ -38,10 +35,8 @@ public class SystemBusinessTest {
 			e.printStackTrace();
 		}
 		
-		redisPoolMock = Mockito.mock(JedisPool.class);
-		
 		systemRepositoryMock = Mockito.mock(SystemRepository.class);
-		systemBusiness = new SystemBusiness(dataSourceMock, redisPoolMock, systemRepositoryMock);
+		systemBusiness = new SystemBusiness(dataSourceMock, systemRepositoryMock);
 	}
 	
 	@After
