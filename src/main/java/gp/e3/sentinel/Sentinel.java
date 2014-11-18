@@ -67,6 +67,10 @@ public class Sentinel extends Service<SentinelConfig> {
 		dataSource.setUrl(mySQLConfig.getUrl());
 		dataSource.setUsername(mySQLConfig.getUsername());
 		dataSource.setPassword(mySQLConfig.getPassword());
+		
+		dataSource.setRemoveAbandonedTimeout(mySQLConfig.getRemoveAbandonedTimeoutInSeconds());
+		dataSource.setRemoveAbandonedOnBorrow(mySQLConfig.isAbleToRemoveAbandonedConnections());
+		dataSource.setRemoveAbandonedOnMaintenance(mySQLConfig.isAbleToRemoveAbandonedConnections());
 
 		return dataSource;
 	}

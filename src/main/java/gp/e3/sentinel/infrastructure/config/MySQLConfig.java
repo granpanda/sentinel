@@ -27,6 +27,16 @@ public class MySQLConfig {
 	@NotEmpty
 	@JsonProperty
 	private String password;
+	
+	@NotNull
+    @NotEmpty
+    @JsonProperty
+    private int removeAbandonedTimeoutInSeconds;
+
+    @NotNull
+    @NotEmpty
+    @JsonProperty
+    private boolean ableToRemoveAbandonedConnections; 
 
 	public String getDriverClass() {
 		return driverClass;
@@ -42,5 +52,13 @@ public class MySQLConfig {
 
 	public String getPassword() {
 		return password;
+	}
+
+	public int getRemoveAbandonedTimeoutInSeconds() {
+		return removeAbandonedTimeoutInSeconds;
+	}
+
+	public boolean isAbleToRemoveAbandonedConnections() {
+		return ableToRemoveAbandonedConnections;
 	}
 }

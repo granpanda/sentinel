@@ -21,6 +21,9 @@ mySQLConfig:
     
   # The password
   password: sentinel12345
+  
+  removeAbandonedTimeoutInSeconds: 120
+  ableToRemoveAbandonedConnections: true
 
 redisConfig:
 
