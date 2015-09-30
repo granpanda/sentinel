@@ -1,22 +1,19 @@
 package gp.e3.sentinel.infrastructure.healthchecks;
 
+import com.codahale.metrics.health.HealthCheck;
 import redis.clients.jedis.Jedis;
-
-import com.yammer.metrics.core.HealthCheck;
 
 public class RedisHealthCheck extends HealthCheck {
 	
 	private Jedis redisClient;
 	
-	public RedisHealthCheck(String name, Jedis redisClient) {
-		
-		super(name);
+	public RedisHealthCheck(Jedis redisClient) {
 		this.redisClient = redisClient;
 	}
 
 	@Override
 	protected Result check() throws Exception {
-		
-		return redisClient.isConnected()? Result.healthy() : Result.unhealthy("Redis client is not connected.");
+		String pong = redisClient.ping();
+		return pong.equalsIgnoreCase("pong") ? Result.healthy() : Result.unhealthy("Redis client is not connected.");
 	}
 }

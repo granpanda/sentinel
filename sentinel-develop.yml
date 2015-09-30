@@ -1,8 +1,11 @@
-http:
+server:
 
-  port: 9018
-  adminPort: 9019
-  rootPath: /api/sentinel/*
+  type: simple
+  applicationContextPath: /sentinel/api
+  adminContextPath: /sentinel/admin
+  connector:
+      type: http
+      port: 9018
 
 logging:
 

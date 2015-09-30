@@ -1,108 +1,90 @@
 package gp.e3.sentinel.domain.business;
 
 import gp.e3.sentinel.domain.entities.System;
-import gp.e3.sentinel.domain.jobs.CheckAllSystemsJob;
 import gp.e3.sentinel.domain.repositories.SystemRepository;
 import gp.e3.sentinel.infrastructure.utils.SqlUtils;
+import org.apache.commons.dbcp2.BasicDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.dbcp2.BasicDataSource;
-import org.quartz.JobBuilder;
-import org.quartz.JobDetail;
-import org.quartz.Scheduler;
-import org.quartz.SimpleScheduleBuilder;
-import org.quartz.Trigger;
-import org.quartz.TriggerBuilder;
-import org.quartz.impl.DirectSchedulerFactory;
-
 public class SystemBusiness {
-	
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SystemBusiness.class);
+
+	private final JedisPool redisPool;
 	private final BasicDataSource dataSource;
 	private final SystemRepository systemRepository;
-	
-	public SystemBusiness(BasicDataSource dataSource, SystemRepository systemRepository) {
-		
-		this.dataSource = dataSource;
-		this.systemRepository = systemRepository;
-	}
 
-	public long createSystem(System system) {
-		
+    public SystemBusiness(JedisPool redisPool, BasicDataSource dataSource, SystemRepository systemRepository) {
+        this.redisPool = redisPool;
+        this.dataSource = dataSource;
+        this.systemRepository = systemRepository;
+    }
+
+    public long createSystem(System system) {
+
 		long systemId = 0;
 		Connection dbConnection = null;
-		
+
 		try {
-			
 			dbConnection = dataSource.getConnection();
 			systemId = systemRepository.createSystem(dbConnection, system);
-			
 		} catch (Exception e) {
-			
-			e.printStackTrace();
-			
+            LOGGER.error("createSystem", e);
 		} finally {
-			
 			SqlUtils.closeDbConnection(dbConnection);
 		}
-		
+
 		return systemId;
 	}
-	
+
 	public List<System> getAllSystems() {
-		
+
 		List<System> systems = new ArrayList<System>();
 		Connection dbConnection = null;
-		
+
 		try {
-			
 			dbConnection = dataSource.getConnection();
 			systems = systemRepository.getAllSystems(dbConnection);
-			
 		} catch (Exception e) {
-			
-			e.printStackTrace();
-			
+			LOGGER.error("getAllSystems", e);
 		} finally {
-			
 			SqlUtils.closeDbConnection(dbConnection);
 		}
-		
+
 		return systems;
 	}
-	
-	public void executeCheckAllSystemsJobForever() {
-		
-		try {
-			
-			int maxThreads = 1;
-			DirectSchedulerFactory instance = DirectSchedulerFactory.getInstance();
-			instance.createVolatileScheduler(maxThreads);
-			Scheduler scheduler = instance.getScheduler();
-			
-			JobDetail jobDetail = JobBuilder.newJob(CheckAllSystemsJob.class)
-					.withIdentity("checkAllSystemsJob")
-					.build();
-			
-			int intervalInSeconds = 60;
-			SimpleScheduleBuilder triggerSchedule = SimpleScheduleBuilder.simpleSchedule()
-					.withIntervalInSeconds(intervalInSeconds)
-					.repeatForever();
-			
-			Trigger trigger = TriggerBuilder.newTrigger()
-					.withIdentity("checkAllSystemsJobTrigger")
-					.withSchedule(triggerSchedule)
-					.startNow()
-					.build();
-			
-			scheduler.start();
-			scheduler.scheduleJob(jobDetail, trigger);
-			
-		} catch (Exception e) {
-			
-			e.printStackTrace();
-		}
+
+	public boolean isSystemInCache(long systemId) {
+
+		Jedis redisClient = redisPool.getResource();
+		boolean isSystemInCache = systemRepository.isSystemInCache(redisClient, systemId);
+		redisClient.close();
+
+		return isSystemInCache;
 	}
+
+    public boolean addSystemToCache(System system) {
+
+        Jedis redisClient = redisPool.getResource();
+        boolean systemWasAddedToCache = systemRepository.addSystemToCacheWithTimeToLive(redisClient, system);
+        redisClient.close();
+
+        return systemWasAddedToCache;
+    }
+
+    public boolean deleteSystemFromCache(long systemId) {
+
+        Jedis redisClient = redisPool.getResource();
+        boolean systemWasDeletedFromCache = systemRepository.deleteSystemFromCache(redisClient, systemId);
+        redisClient.close();
+
+        return systemWasDeletedFromCache;
+    }
 }

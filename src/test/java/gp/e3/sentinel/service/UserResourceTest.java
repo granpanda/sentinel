@@ -1,38 +1,34 @@
 package gp.e3.sentinel.service;
 
-import static org.junit.Assert.*;
 import gp.e3.sentinel.domain.business.UserBusiness;
 import gp.e3.sentinel.domain.entities.User;
 import gp.e3.sentinel.util.UserFactoryForTests;
-
-import javax.ws.rs.core.MediaType;
-
+import io.dropwizard.testing.junit.ResourceTestRule;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource.Builder;
-import com.yammer.dropwizard.testing.ResourceTest;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
-public class UserResourceTest extends ResourceTest {
-	
-	private UserBusiness userBusinessMock;
-	private UserResource userResource;
-	
-	@Override
-	protected void setUpResources() throws Exception {
-		
-		userBusinessMock =  Mockito.mock(UserBusiness.class);
-		userResource = new UserResource(userBusinessMock);
-		
-		addResource(userResource);
-	}
-	
-	private Builder getDefaultHttpRequest(String url) {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
-		return client().resource(url)
-				.type(MediaType.APPLICATION_JSON)
+public class UserResourceTest {
+	
+	private static final UserBusiness userBusinessMock = Mockito.mock(UserBusiness.class);
+	private static final UserResource userResource = new UserResource(userBusinessMock);
+
+	@ClassRule
+	public static final ResourceTestRule resources = ResourceTestRule.builder()
+			.addResource(userResource).build();
+
+	private Invocation.Builder getDefaultHttpRequest(String url) {
+
+		return resources.client().target(url).request(MediaType.APPLICATION_JSON)
 				.accept(MediaType.APPLICATION_JSON);
 	}
 	
@@ -44,10 +40,10 @@ public class UserResourceTest extends ResourceTest {
 		Mockito.when(userBusinessMock.createUser(Mockito.any(User.class))).thenReturn(expectedResult);
 		
 		String url = "/users";
-		ClientResponse httpResponse = getDefaultHttpRequest(url).post(ClientResponse.class, user);
-		
-		assertEquals(201, httpResponse.getStatus());
-		Boolean responseEntity = httpResponse.getEntity(Boolean.class);
+		Response response = getDefaultHttpRequest(url).post(Entity.entity(user, MediaType.APPLICATION_JSON));
+		assertEquals(201, response.getStatus());
+
+		Boolean responseEntity = response.readEntity(Boolean.class);
 		assertEquals(expectedResult, responseEntity);
 	}
 	
@@ -59,10 +55,10 @@ public class UserResourceTest extends ResourceTest {
 		Mockito.when(userBusinessMock.createUser(Mockito.any(User.class))).thenReturn(expectedResult);
 		
 		String url = "/users";
-		ClientResponse httpResponse = getDefaultHttpRequest(url).post(ClientResponse.class, user);
-		
-		assertEquals(500, httpResponse.getStatus());
-		Boolean responseEntity = httpResponse.getEntity(Boolean.class);
+		Response response = getDefaultHttpRequest(url).post(Entity.entity(user, MediaType.APPLICATION_JSON));
+		assertEquals(500, response.getStatus());
+
+		Boolean responseEntity = response.readEntity(Boolean.class);
 		assertEquals(expectedResult, responseEntity);
 	}
 	
@@ -75,11 +71,10 @@ public class UserResourceTest extends ResourceTest {
 		Mockito.when(userBusinessMock.getUserByMail(mail)).thenReturn(user);
 		
 		String url = "/users/" + mail;
-		ClientResponse httpResponse = getDefaultHttpRequest(url).get(ClientResponse.class);
+		Response response = getDefaultHttpRequest(url).get();
+		assertEquals(200, response.getStatus());
 		
-		assertEquals(200, httpResponse.getStatus());
-		
-		User retrievedUser = httpResponse.getEntity(User.class);
+		User retrievedUser = response.readEntity(User.class);
 		
 		assertNotNull(retrievedUser);
 		assertEquals(user.getMail(), retrievedUser.getMail());
@@ -96,12 +91,10 @@ public class UserResourceTest extends ResourceTest {
 		Mockito.when(userBusinessMock.getUserByMail(mail)).thenReturn(null);
 		
 		String url = "/users/" + mail;
-		ClientResponse httpResponse = getDefaultHttpRequest(url).get(ClientResponse.class);
+		Response response = getDefaultHttpRequest(url).get();
+		assertEquals(500, response.getStatus());
 		
-		assertEquals(500, httpResponse.getStatus());
-		
-		String errorMessage = httpResponse.getEntity(String.class);
-		
+		String errorMessage = response.readEntity(String.class);
 		assertNotNull(errorMessage);
 		assertEquals(false, StringUtils.isBlank(errorMessage));
 	}
@@ -110,10 +103,8 @@ public class UserResourceTest extends ResourceTest {
 	public void testGetUserByMail_NOK_2() {
 		
 		String mail = "";
-		
 		String url = "/users/" + mail;
-		ClientResponse httpResponse = getDefaultHttpRequest(url).get(ClientResponse.class);
-		
-		assertEquals(405, httpResponse.getStatus());
+		Response response = getDefaultHttpRequest(url).get();
+		assertEquals(405, response.getStatus());
 	}
 }

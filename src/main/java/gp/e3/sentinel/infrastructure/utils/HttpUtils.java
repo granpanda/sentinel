@@ -30,10 +30,6 @@ public class HttpUtils {
 				answer += line;
 				line = br.readLine();
 			}
-
-		} else {
-
-			answer = "The given entity response was empty.";
 		}
 
 		return answer;
@@ -50,31 +46,8 @@ public class HttpUtils {
 		return requestConfig;
 	}
 
-	public static boolean closeHttpClientAndHttpResponse(CloseableHttpClient httpClient, CloseableHttpResponse httpResponse) {
-		
-		try {
+    public static boolean isSuccessfulRequest(int statusCode) {
 
-			if (httpResponse != null) {
-
-				httpResponse.close();
-			}
-			
-			if (httpClient != null) {
-				
-				httpClient.close();
-			}
-			
-			httpResponse = null;
-			httpClient = null;
-
-		} catch (IOException e) {
-			
-			e.printStackTrace();
-			
-			httpResponse = null;
-			httpClient = null;
-		}
-		
-		return true;
-	}
+        return (statusCode >= 200) && (statusCode < 300);
+    }
 }

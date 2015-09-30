@@ -2,10 +2,10 @@ package gp.e3.sentinel.infrastructure.config;
 
 import javax.validation.constraints.NotNull;
 
+import io.dropwizard.Configuration;
 import org.hibernate.validator.constraints.NotEmpty;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.yammer.dropwizard.config.Configuration;
 
 public class RedisConfig extends Configuration {
 	

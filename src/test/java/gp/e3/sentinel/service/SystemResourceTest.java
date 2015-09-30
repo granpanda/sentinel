@@ -11,35 +11,30 @@ import gp.e3.sentinel.domain.entities.User;
 import gp.e3.sentinel.util.SystemFactoryForTests;
 import gp.e3.sentinel.util.UserFactoryForTests;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
+import io.dropwizard.testing.junit.ResourceTestRule;
+import org.glassfish.jersey.client.ClientResponse;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource.Builder;
-import com.yammer.dropwizard.testing.ResourceTest;
-
-public class SystemResourceTest extends ResourceTest {
+public class SystemResourceTest {
 	
-	private SystemBusiness systemBusinessMock;
-	private UserBusiness userBusinessMock;
-	private SystemResource systemResource;
+	private static final SystemBusiness systemBusinessMock = Mockito.mock(SystemBusiness.class);
+	private static final UserBusiness userBusinessMock = Mockito.mock(UserBusiness.class);
+	private static final SystemResource systemResource = new SystemResource(systemBusinessMock, userBusinessMock);
 
-	@Override
-	protected void setUpResources() throws Exception {
-		
-		systemBusinessMock = Mockito.mock(SystemBusiness.class);
-		userBusinessMock = Mockito.mock(UserBusiness.class);
-		systemResource = new SystemResource(systemBusinessMock, userBusinessMock);
-		
-		addResource(systemResource);
-	}
-	
-	private Builder getDefaultHttpRequest(String url) {
+	@ClassRule
+	public static final ResourceTestRule resources = ResourceTestRule.builder()
+			.addResource(systemResource).build();
 
-		return client().resource(url)
-				.type(MediaType.APPLICATION_JSON)
+	private Invocation.Builder getDefaultHttpRequest(String url) {
+
+		return resources.client().target(url).request(MediaType.APPLICATION_JSON)
 				.accept(MediaType.APPLICATION_JSON);
 	}
 	
@@ -52,14 +47,13 @@ public class SystemResourceTest extends ResourceTest {
 		Mockito.when(systemBusinessMock.createSystem(Mockito.any(System.class))).thenReturn(expectedSystemId);
 		
 		String url = "/systems";
-		ClientResponse httpResponse = getDefaultHttpRequest(url).post(ClientResponse.class, system);
+		Response response = getDefaultHttpRequest(url).post(Entity.entity(system, MediaType.APPLICATION_JSON));
+		assertEquals(201, response.getStatus());
 		
-		assertEquals(201, httpResponse.getStatus());
-		
-		Boolean systemWasCreated = httpResponse.getEntity(Boolean.class);
+		Boolean systemWasCreated = response.readEntity(Boolean.class);
 		assertEquals(true, systemWasCreated);
 	}
-	
+
 	@Test
 	public void testCreateSystem_NOK() {
 		
@@ -69,14 +63,13 @@ public class SystemResourceTest extends ResourceTest {
 		Mockito.when(systemBusinessMock.createSystem(Mockito.any(System.class))).thenReturn(expectedSystemId);
 		
 		String url = "/systems";
-		ClientResponse httpResponse = getDefaultHttpRequest(url).post(ClientResponse.class, system);
+		Response response = getDefaultHttpRequest(url).post(Entity.entity(system, MediaType.APPLICATION_JSON));
+		assertEquals(500, response.getStatus());
 		
-		assertEquals(500, httpResponse.getStatus());
-		
-		Boolean systemWasCreated = httpResponse.getEntity(Boolean.class);
+		Boolean systemWasCreated = response.readEntity(Boolean.class);
 		assertEquals(false, systemWasCreated);
 	}
-	
+
 	@Test
 	public void testGetAllUsersSubscribedToASystem_OK() {
 		
@@ -85,16 +78,15 @@ public class SystemResourceTest extends ResourceTest {
 		
 		int listSize = 5;
 		List<User> expectedUsersList = UserFactoryForTests.getUsersList(listSize);
-		Mockito.when(userBusinessMock.getAllUsersSubscribedToASystem(systemId)).thenReturn(expectedUsersList);
+		Mockito.when(userBusinessMock.getAllUsersSubscribedToSystem(systemId)).thenReturn(expectedUsersList);
 		
 		String url = "/systems/" + systemId + "/users";
-		ClientResponse httpResponse = getDefaultHttpRequest(url).get(ClientResponse.class);
+		Response response = getDefaultHttpRequest(url).get();
+		assertEquals(200, response.getStatus());
 		
-		assertEquals(200, httpResponse.getStatus());
-		
-		List<User> retrievedUsersList = httpResponse.getEntity(List.class);
-		assertNotNull(retrievedUsersList);
-		assertEquals(listSize, retrievedUsersList.size());
+		User[] retrievedUsersArray = response.readEntity(User[].class);
+		assertNotNull(retrievedUsersArray);
+		assertEquals(listSize, retrievedUsersArray.length);
 	}
 	
 	@Test
@@ -105,15 +97,14 @@ public class SystemResourceTest extends ResourceTest {
 		
 		int listSize = 0;
 		List<User> expectedUsersList = UserFactoryForTests.getUsersList(listSize);
-		Mockito.when(userBusinessMock.getAllUsersSubscribedToASystem(systemId)).thenReturn(expectedUsersList);
+		Mockito.when(userBusinessMock.getAllUsersSubscribedToSystem(systemId)).thenReturn(expectedUsersList);
 		
 		String url = "/systems/" + systemId + "/users";
-		ClientResponse httpResponse = getDefaultHttpRequest(url).get(ClientResponse.class);
+		Response response = getDefaultHttpRequest(url).get();
+		assertEquals(200, response.getStatus());
 		
-		assertEquals(200, httpResponse.getStatus());
-		
-		List<User> retrievedUsersList = httpResponse.getEntity(List.class);
-		assertNotNull(retrievedUsersList);
-		assertEquals(listSize, retrievedUsersList.size());
+		User[] retrievedUsersArray = response.readEntity(User[].class);
+		assertNotNull(retrievedUsersArray);
+		assertEquals(listSize, retrievedUsersArray.length);
 	}
 }

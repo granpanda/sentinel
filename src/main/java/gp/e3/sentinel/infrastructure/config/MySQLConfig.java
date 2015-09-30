@@ -2,11 +2,12 @@ package gp.e3.sentinel.infrastructure.config;
 
 import javax.validation.constraints.NotNull;
 
+import io.dropwizard.Configuration;
 import org.hibernate.validator.constraints.NotEmpty;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class MySQLConfig {
+public class MySQLConfig extends Configuration {
 
 	@NotNull
 	@NotEmpty

@@ -1,12 +1,11 @@
 package gp.e3.sentinel;
 
-import javax.validation.constraints.NotNull;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.yammer.dropwizard.config.Configuration;
-
 import gp.e3.sentinel.infrastructure.config.MySQLConfig;
 import gp.e3.sentinel.infrastructure.config.RedisConfig;
+import io.dropwizard.Configuration;
+
+import javax.validation.constraints.NotNull;
 
 public class SentinelConfig extends Configuration {
 	
