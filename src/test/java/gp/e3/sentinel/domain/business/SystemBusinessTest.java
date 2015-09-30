@@ -15,8 +15,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 
 public class SystemBusinessTest {
+
+	private Jedis redisClient;
+	private JedisPool redisPool;
 	
 	private Connection dbConnectionMock;
 	private BasicDataSource dataSourceMock;
@@ -26,9 +31,14 @@ public class SystemBusinessTest {
 	
 	@Before
 	public void setUp() {
+
+		redisClient = Mockito.mock(Jedis.class);
+		redisPool = Mockito.mock(JedisPool.class);
+		Mockito.when(redisPool.getResource()).thenReturn(redisClient);
 		
 		dbConnectionMock = Mockito.mock(Connection.class);
 		dataSourceMock = Mockito.mock(BasicDataSource.class);
+
 		try {
 			Mockito.when(dataSourceMock.getConnection()).thenReturn(dbConnectionMock);
 		} catch (SQLException e) {
@@ -36,14 +46,18 @@ public class SystemBusinessTest {
 		}
 		
 		systemRepositoryMock = Mockito.mock(SystemRepository.class);
-		systemBusiness = new SystemBusiness(dataSourceMock, systemRepositoryMock);
+		systemBusiness = new SystemBusiness(redisPool, dataSourceMock, systemRepositoryMock);
 	}
 	
 	@After
 	public void tearDown() {
+
+		redisClient = null;
+		redisPool = null;
 		
 		dbConnectionMock = null;
 		dataSourceMock = null;
+
 		systemRepositoryMock = null;
 		systemBusiness = null;
 	}

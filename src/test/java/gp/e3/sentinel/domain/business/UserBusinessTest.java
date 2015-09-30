@@ -129,7 +129,7 @@ public class UserBusinessTest {
 		List<User> users = UserFactoryForTests.getUsersList(listSize);
 		Mockito.when(userRepositoryMock.getAllUsersSubscribedToASystem(dbConnectionMock, systemId)).thenReturn(users);
 		
-		List<User> retrievedUsersList = userBusiness.getAllUsersSubscribedToASystem(systemId);
+		List<User> retrievedUsersList = userBusiness.getAllUsersSubscribedToSystem(systemId);
 		assertNotNull(retrievedUsersList);
 		assertEquals(listSize, retrievedUsersList.size());
 	}
@@ -143,7 +143,7 @@ public class UserBusinessTest {
 		List<User> users = UserFactoryForTests.getUsersList(listSize);
 		Mockito.when(userRepositoryMock.getAllUsersSubscribedToASystem(dbConnectionMock, systemId)).thenReturn(users);
 		
-		List<User> retrievedUsersList = userBusiness.getAllUsersSubscribedToASystem(systemId);
+		List<User> retrievedUsersList = userBusiness.getAllUsersSubscribedToSystem(systemId);
 		assertNotNull(retrievedUsersList);
 		assertEquals(listSize, retrievedUsersList.size());
 	}
@@ -156,7 +156,7 @@ public class UserBusinessTest {
 		Mockito.doThrow(Exception.class).when(userRepositoryMock).getAllUsersSubscribedToASystem(dbConnectionMock, systemId);
 		
 		int listSize = 0;
-		List<User> retrievedUsersList = userBusiness.getAllUsersSubscribedToASystem(systemId);
+		List<User> retrievedUsersList = userBusiness.getAllUsersSubscribedToSystem(systemId);
 		assertNotNull(retrievedUsersList);
 		assertEquals(listSize, retrievedUsersList.size());
 	}
