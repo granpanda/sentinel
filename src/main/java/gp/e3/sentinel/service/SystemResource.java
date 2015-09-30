@@ -53,7 +53,7 @@ public class SystemResource {
 	@Path("/{systemId}/users")
 	public Response getAllUsersSubscribedToASystem(@PathParam("systemId") long systemId) {
 		
-		List<User> users = userBusiness.getAllUsersSubscribedToASystem(systemId);
+		List<User> users = userBusiness.getAllUsersSubscribedToSystem(systemId);
 		return Response.status(200).entity(users).build();
 	}
 }

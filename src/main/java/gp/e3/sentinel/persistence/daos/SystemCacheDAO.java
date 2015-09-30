@@ -43,7 +43,7 @@ public class SystemCacheDAO {
 		boolean systemExistsInCache = false;
 		
 		if (systemId > 0) {
-			
+
 			systemExistsInCache = redisClient.exists(systemId + "");
 		}
 		
