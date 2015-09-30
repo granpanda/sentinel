@@ -27,6 +27,8 @@ import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.Protocol;
@@ -34,6 +36,8 @@ import redis.clients.jedis.Protocol;
 import java.sql.SQLException;
 
 public class Sentinel extends Application<SentinelConfig> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Sentinel.class);
 
 	@Override
 	public void initialize(Bootstrap<SentinelConfig> bootstrap) {
@@ -117,7 +121,7 @@ public class Sentinel extends Application<SentinelConfig> {
 			MySQLHealthCheck mySqlHealthCheck = new MySQLHealthCheck(dataSource.getConnection());
 			environment.healthChecks().register("mysql", mySqlHealthCheck);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LOGGER.error("addMySQLHealthCheck", e);
 		}
 	}
 
@@ -145,9 +149,10 @@ public class Sentinel extends Application<SentinelConfig> {
 		addMySQLHealthCheck(environment, dataSource);
 		addRedisHealthCheck(environment, redisPool);
 
-		// Start check systems scheduler
-		CheckSystemsScheduler scheduler = new CheckSystemsScheduler(systemBusiness, userBusiness);
-		scheduler.run();
+		// Start check systems checkSystemsScheduler
+		int seconds = 60;
+		CheckSystemsScheduler checkSystemsScheduler = new CheckSystemsScheduler(systemBusiness, userBusiness);
+		checkSystemsScheduler.executeJobForever(seconds);
 	}
 
 	public static void main(String[] args) {
@@ -156,7 +161,7 @@ public class Sentinel extends Application<SentinelConfig> {
 			Sentinel sentinel = new Sentinel();
 			sentinel.run(args);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("main", e);
 		}
 	}
 }
