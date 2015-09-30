@@ -123,4 +123,82 @@ public class SystemBusinessTest {
 		assertNotNull(retrievedSystemsList);
 		assertEquals(listSize, retrievedSystemsList.size());
 	}
+
+	@Test
+	public void testIsSystemInCache_OK() {
+
+		System system = SystemFactoryForTests.getDefaultSystem();
+		long systemId = system.getId();
+
+		boolean expectedValue = true;
+		Mockito.when(systemRepositoryMock.isSystemInCache(redisClient, systemId)).thenReturn(expectedValue);
+
+		boolean isSystemInCache = systemBusiness.isSystemInCache(systemId);
+		assertEquals(expectedValue, isSystemInCache);;
+
+	}
+
+	@Test
+	public void testIsSystemInCache_NOK() {
+
+		System system = SystemFactoryForTests.getDefaultSystem();
+		long systemId = system.getId();
+
+		boolean expectedValue = false;
+		Mockito.when(systemRepositoryMock.isSystemInCache(redisClient, systemId)).thenReturn(expectedValue);
+
+		boolean isSystemInCache = systemBusiness.isSystemInCache(systemId);
+		assertEquals(expectedValue, isSystemInCache);;
+
+	}
+
+	@Test
+	public void testAddSystemToCache_OK() {
+
+		System system = SystemFactoryForTests.getDefaultSystem();
+
+		boolean expectedValue = true;
+		Mockito.when(systemRepositoryMock.addSystemToCacheWithTimeToLive(redisClient, system)).thenReturn(expectedValue);
+
+		boolean systemWasAddedToCache = systemBusiness.addSystemToCache(system);
+		assertEquals(expectedValue, systemWasAddedToCache);
+	}
+
+	@Test
+	public void testAddSystemToCache_NOK() {
+
+		System system = SystemFactoryForTests.getDefaultSystem();
+
+		boolean expectedValue = false;
+		Mockito.when(systemRepositoryMock.addSystemToCacheWithTimeToLive(redisClient, system)).thenReturn(expectedValue);
+
+		boolean systemWasAddedToCache = systemBusiness.addSystemToCache(system);
+		assertEquals(expectedValue, systemWasAddedToCache);
+	}
+
+	@Test
+	public void testDeleteSystemFromCache_OK() {
+
+		System system = SystemFactoryForTests.getDefaultSystem();
+		long systemId = system.getId();
+
+		boolean expectedValue = true;
+		Mockito.when(systemRepositoryMock.deleteSystemFromCache(redisClient, systemId)).thenReturn(expectedValue);
+
+		boolean systemWasDeletedFromCache = systemBusiness.deleteSystemFromCache(systemId);
+		assertEquals(expectedValue, systemWasDeletedFromCache);
+	}
+	
+	@Test
+	public void testDeleteSystemFromCache_NOK() {
+
+		System system = SystemFactoryForTests.getDefaultSystem();
+		long systemId = system.getId();
+
+		boolean expectedValue = false;
+		Mockito.when(systemRepositoryMock.deleteSystemFromCache(redisClient, systemId)).thenReturn(expectedValue);
+
+		boolean systemWasDeletedFromCache = systemBusiness.deleteSystemFromCache(systemId);
+		assertEquals(expectedValue, systemWasDeletedFromCache);
+	}
 }
