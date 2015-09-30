@@ -2,6 +2,8 @@ package gp.e3.sentinel.domain.jobs;
 
 import gp.e3.sentinel.domain.business.SystemBusiness;
 import gp.e3.sentinel.domain.business.UserBusiness;
+import org.quartz.*;
+import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,7 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class CheckSystemsScheduler implements Runnable {
+public class CheckSystemsScheduler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CheckSystemsScheduler.class);
 
@@ -21,20 +23,30 @@ public class CheckSystemsScheduler implements Runnable {
         this.userBusiness = userBusiness;
     }
 
-    @Override
-    public void run() {
+    public void executeJobForever(int secondsToRepeatTheJob) throws SchedulerException {
 
-        try {
+        Scheduler scheduler = new StdSchedulerFactory().getScheduler();
 
-            int initialDelay = 0;
-            int delay = 60;
-            ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-            CheckSystemExecutor checkSystemExecutor = new CheckSystemExecutor(systemBusiness, userBusiness);
-            scheduledExecutor.scheduleWithFixedDelay(checkSystemExecutor, initialDelay, delay, TimeUnit.SECONDS);
+        JobDataMap jobDataMap = new JobDataMap();
+        jobDataMap.put("systemBusiness", systemBusiness);
+        jobDataMap.put("userBusiness", userBusiness);
 
-        } catch (Exception e) {
+        JobDetail job = JobBuilder.newJob(CheckSystemExecutor.class)
+                .setJobData(jobDataMap)
+                .withIdentity("checkSystemsJobForever")
+                .build();
 
-            LOGGER.error("run", e);
-        }
+        SimpleScheduleBuilder triggerScheduler = SimpleScheduleBuilder.simpleSchedule()
+                .withIntervalInSeconds(secondsToRepeatTheJob)
+                .repeatForever();
+
+        Trigger trigger = TriggerBuilder.newTrigger()
+                .withIdentity("checkSystemsTriggerForever")
+                .withSchedule(triggerScheduler)
+                .startNow()
+                .build();
+
+        scheduler.start();
+        scheduler.scheduleJob(job, trigger);
     }
 }

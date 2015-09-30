@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1 (2015-09-30)
+
+* Use Quartz to handle the job execution.
+
 ## 1.1.0 (2015-09-30)
 
 * Remove RabbitMQ queues. They were unnecessary.
