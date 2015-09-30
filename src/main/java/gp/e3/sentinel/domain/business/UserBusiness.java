@@ -9,8 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UserBusiness {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(UserBusiness.class);
 	
 	private final BasicDataSource dataSource;
 	private final UserRepository userRepository;
@@ -27,23 +31,19 @@ public class UserBusiness {
 		Connection dbConnection = null;
 		
 		try {
-			
+
 			dbConnection = dataSource.getConnection();
 			dbConnection.setAutoCommit(false);
-			
+
 			if (userRepository.createUser(dbConnection, user)) {
-				
 				dbConnection.commit();
 				userWasCreated = true;
 			}
-			
+
 		} catch (Exception e) {
-			
-			e.printStackTrace();
+			LOGGER.error("createUser", e);
 			SqlUtils.rollbackTransaction(dbConnection);
-			
 		} finally {
-			
 			SqlUtils.closeDbConnection(dbConnection);
 		}
 		
@@ -56,38 +56,28 @@ public class UserBusiness {
 		Connection dbConnection = null;
 		
 		try {
-			
 			dbConnection = dataSource.getConnection();
 			user = userRepository.getUserByMail(dbConnection, mail);
-			
 		} catch (Exception e) {
-			
-			e.printStackTrace();
-			
+			LOGGER.error("getUserByMail", e);
 		} finally {
-			
 			SqlUtils.closeDbConnection(dbConnection);
 		}
 		
 		return user;
 	}
 	
-	public List<User> getAllUsersSubscribedToASystem(long systemId) {
+	public List<User> getAllUsersSubscribedToSystem(long systemId) {
 		
 		List<User> users = new ArrayList<User>();
 		Connection dbConnection = null;
 		
 		try {
-			
 			dbConnection = dataSource.getConnection();
 			users = userRepository.getAllUsersSubscribedToASystem(dbConnection, systemId);
-			
 		} catch (Exception e) {
-			
-			e.printStackTrace();
-			
+			LOGGER.error("getAllUsersSubscribedToSystem", e);
 		} finally {
-			
 			SqlUtils.closeDbConnection(dbConnection);
 		}
 		
